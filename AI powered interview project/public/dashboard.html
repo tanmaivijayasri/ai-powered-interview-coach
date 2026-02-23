@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InterviewCoach | Dashboard</title>
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="drawer_styles.css">
+
+  <!-- No inline styles needed, all in styles.css -->
+</head>
+
+<body>
+
+  <!-- SIDEBAR (Reference Layout: Logo Top, Nav Middle, Logout Bottom) -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <div class="logo-icon"><i class="fa-solid fa-brain"></i></div>
+      <span class="logo-text">InterviewCoach</span>
+    </div>
+
+    <nav class="nav-links">
+      <a class="nav-item active" onclick="showView('dashboard')">
+        <i class="fa-solid fa-table-columns"></i>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" onclick="showView('resume')">
+        <i class="fa-solid fa-file-contract"></i>
+        <span>Resume Analyzer</span>
+      </a>
+      <a class="nav-item" onclick="showView('interview')">
+        <i class="fa-solid fa-comments"></i>
+        <span>Mock Interview</span>
+      </a>
+
+      <!-- Placeholder for future features or just matching layout -->
+      <a class="nav-item" style="opacity: 0.5; cursor: not-allowed;">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Analytics (Soon)</span>
+      </a>
+      <a class="nav-item" style="opacity: 0.5; cursor: not-allowed;">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- PRO PLAN REMOVED per user request -->
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span>Logout</span>
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="main-content">
+
+    <!-- HEADER -->
+    <header class="top-header">
+      <div>
+        <h1 class="page-title" id="pageTitle">Overview</h1>
+        <p class="welcome-text">Welcome back, <span id="userName">User</span>! 👋</p>
+      </div>
+      <div class="user-actions">
+        <!-- Notification Bell (Reference) -->
+        <i class="fa-regular fa-bell" style="font-size: 1.25rem; color: #666; cursor: pointer;"></i>
+        <!-- User Profile (Now Clickable) -->
+        <div class="user-avatar" id="avatarInitials" title="Edit Profile">U</div>
+      </div>
+    </header>
+
+    <!-- VIEWS CONTAINER -->
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section id="dashboard-view" class="view-section">
+
+      <!-- Empty State (if new user) -->
+      <div id="emptyState" class="hidden"
+        style="text-align: center; padding: 4rem; border: 2px dashed #333; border-radius: 16px;">
+        <h3>Ready to start? 🚀</h3>
+        <p style="color: #666; margin-bottom: 2rem;">Upload your resume to unlock personalized AI coaching.</p>
+        <button class="btn-primary" onclick="showView('resume')">Upload Resume</button>
+      </div>
+
+      <!-- Active State (Stats + Charts) -->
+      <div id="activeState" class="hidden">
+
+        <!-- Stats Row (Now 4 Cards) -->
+        <div class="stats-row">
+          <!-- Card 1: Resume Score -->
+          <div class="stat-card">
+            <div class="stat-icon-box icon-purple">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Resume Score</span>
+              <span class="stat-value" id="resumeScore">--%</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Questions Solved -->
+          <div class="stat-card">
+            <div class="stat-icon-box icon-blue">
+              <i class="fa-solid fa-circle-question"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Questions Solved</span>
+              <span class="stat-value" id="totalQs">0</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Avg Performance -->
+          <div class="stat-card">
+            <div class="stat-icon-box icon-green">
+              <i class="fa-solid fa-chart-simple"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Avg. Performance</span>
+              <span class="stat-value" id="avgScore">--/10</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Practice Time (New) -->
+          <div class="stat-card">
+            <div class="stat-icon-box" style="background: rgba(255, 184, 0, 0.15); color: #FFB800;">
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Practice Time</span>
+              <span class="stat-value" id="practiceTime">0m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid (2:1 Ratio like Reference) -->
+        <div class="charts-grid">
+          <div class="chart-box">
+            <div class="chart-header">
+              <span class="chart-title">Performance Trend</span>
+              <!-- Removed date selector for cleaner look -->
+            </div>
+            <canvas id="perfChart"></canvas>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <span class="chart-title">Skill Distribution</span>
+            </div>
+            <canvas id="skillChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. RESUME VIEW -->
+    <section id="resume-view" class="view-section hidden">
+      <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #444; margin-bottom: 1rem;"></i>
+        <h3>Upload your Resume</h3>
+        <p style="color: #666; margin-bottom: 2rem;">Supports PDF & DOCX (Max 10MB)</p>
+        <button class="btn-primary">Select File</button>
+        <input type="file" id="fileInput" hidden onchange="handleFile(this.files)">
+      </div>
+
+      <div id="analysisLoading" class="hidden" style="text-align: center; margin-top: 3rem;">
+        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+        <p style="margin-top: 1rem;">AI is analyzing your profile...</p>
+      </div>
+
+      <div id="analysisResult" class="hidden" style="margin-top: 2rem;">
+        <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+              <h2 id="anaLevel" style="color: var(--primary);">Level: --</h2>
+              <p id="anaSummary" style="margin: 1rem 0; color: #ccc; max-width: 600px;"></p>
+              <div id="anaSkills"></div>
+            </div>
+            <div style="text-align: right;">
+              <div id="anaScore" style="font-size: 4rem; font-weight: 800; color: var(--primary);">0</div>
+              <span style="color: #666;">MARKET READINESS</span>
+            </div>
+          </div>
+
+          <h3 style="margin-top: 2rem; border-top: 1px solid #222; padding-top: 1rem;">Improvement Roadmap</h3>
+          <ul id="anaSuggestions" style="list-style: none; margin-top: 1rem; color: #888;"></ul>
+
+          <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+            <button class="btn-primary" onclick="startInterview('resume')">Start AI Mock Interview</button>
+            <button onclick="location.reload()"
+              style="background: transparent; border: 1px solid #333; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Upload
+              New</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. INTERVIEW VIEW -->
+    <section id="interview-view" class="view-section hidden">
+      <div style="display: grid; grid-template-columns: 300px 1fr; gap: 1.5rem;">
+
+        <!-- Settings Panel -->
+        <div
+          style="background: #111; padding: 1.5rem; border-radius: 16px; border: 1px solid #222; height: fit-content;">
+          <h3 style="margin-bottom: 1.5rem;">Session Settings</h3>
+
+          <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Interview Focus</label>
+          <select id="intMode"
+            style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
+            <option value="resume">Resume Based (Auto)</option>
+            <option value="custom">Specific Topic</option>
+          </select>
+
+          <div id="customSkillBox" class="hidden">
+            <input type="text" id="customSkill" placeholder="Enter topic (e.g. React)"
+              style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
+          </div>
+
+          <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="initSession()">Start
+            Session</button>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-wrapper">
+          <div class="chat-header"
+            style="padding: 1rem 2rem; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-weight: 600;">AI Interviewer</span>
+              <span id="intStatus" style="font-size: 0.8rem; color: #666; margin-left: 0.5rem;">• Idle</span>
+            </div>
+          </div>
+
+          <div id="chatBox" class="chat-history">
+            <div class="msg ai">
+              Select your settings on the left and click "Start Session" to begin practicing! 🚀
+            </div>
+          </div>
+
+          <div class="chat-input-bar">
+            <textarea id="userInput" class="chat-input" placeholder="Type your answer here..." rows="1"
+              onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
+            <button class="send-btn" onclick="sendMsg()"><i class="fa-regular fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PROFILE MODAL -->
+  <div id="profileModal" class="modal-overlay">
+    <div class="profile-card">
+      <i class="fa-solid fa-xmark close-modal-btn" onclick="closeProfile()"></i>
+
+      <!-- Left: Sidebar -->
+      <div class="profile-sidebar">
+        <div class="profile-img-wrapper">
+          <img src="https://ui-avatars.com/api/?name=User&background=D9FF00&color=000" id="modalAvatar"
+            class="profile-img">
+          <div class="edit-avatar-badge" onclick="alert('Upload feature coming soon!')">
+            <i class="fa-solid fa-camera"></i>
+          </div>
+        </div>
+        <h2 class="profile-name" id="modalNameDisplay">User Name</h2>
+        <p class="profile-role" id="modalRoleDisplay">Software Engineer</p>
+
+        <div class="social-links">
+          <div class="social-item">
+            <i class="fa-solid fa-globe"></i>
+            <span>website.com</span>
+          </div>
+          <div class="social-item">
+            <i class="fa-brands fa-github"></i>
+            <span>github.com/user</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Content -->
+      <div class="profile-content">
+        <h3 class="section-title">Personal Details</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Full Name</label>
+            <input type="text" id="editName" class="profile-input" value="User Name">
+          </div>
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Email</label>
+            <input type="email" id="editEmail" class="profile-input" value="user@example.com" disabled
+              style="opacity:0.6; cursor:not-allowed;">
+          </div>
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Phone</label>
+            <input type="text" id="editPhone" class="profile-input" placeholder="+1 (555) 000-0000">
+          </div>
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Mobile</label>
+            <input type="text" id="editMobile" class="profile-input" placeholder="+1 (555) 000-0000">
+          </div>
+          <div class="form-group full-width">
+            <label style="color:#888; font-size:0.85rem;">Address</label>
+            <input type="text" id="editAddress" class="profile-input" placeholder="e.g. San Francisco, CA">
+          </div>
+        </div>
+
+        <h3 class="section-title">Professional Links</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">GitHub</label>
+            <input type="text" id="editGithub" class="profile-input" placeholder="github.com/">
+          </div>
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Website</label>
+            <input type="text" id="editWebsite" class="profile-input" placeholder="https://">
+          </div>
+        </div>
+
+        <button class="save-btn" onclick="saveProfile()">
+          <i class="fa-solid fa-floppy-disk"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toastContainer"
+    style="position: fixed; bottom: 2rem; right: 2rem; display: flex; flex-direction: column; gap: 1rem; z-index: 1000;">
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const API = "http://localhost:3000";
+    const email = localStorage.getItem("userEmail");
+
+    // Auth Check
+    if (!email) window.location.href = "index.html";
+
+    // Initialize UI
+    const defaultName = email.split('@')[0];
+    document.getElementById("userName").innerText = defaultName;
+    document.getElementById("avatarInitials").innerText = email[0].toUpperCase();
+
+    // Make Avatar Clickable
+    document.getElementById("avatarInitials").style.cursor = "pointer";
+    document.getElementById("avatarInitials").onclick = openProfile;
+
+    // -- Profile Modal Logic --
+    function openProfile() {
+      const modal = document.getElementById("profileModal");
+      const name = localStorage.getItem("profileName") || defaultName;
+
+      // Populate Fields
+      document.getElementById("editName").value = name;
+      document.getElementById("modalNameDisplay").innerText = name;
+      document.getElementById("editEmail").value = email;
+      document.getElementById("editPhone").value = localStorage.getItem("profilePhone") || "";
+      document.getElementById("editAddress").value = localStorage.getItem("profileAddress") || "";
+
+      // Update Modal Avatar
+      document.getElementById("modalAvatar").src = `https://ui-avatars.com/api/?name=${name}&background=D9FF00&color=000`;
+
+      modal.classList.add("active");
+    }
+
+    function closeProfile() {
+      document.getElementById("profileModal").classList.remove("active");
+    }
+
+    function saveProfile() {
+      const newName = document.getElementById("editName").value;
+      const phone = document.getElementById("editPhone").value;
+      const addr = document.getElementById("editAddress").value;
+
+      // Save locally for demo
+      localStorage.setItem("profileName", newName);
+      localStorage.setItem("profilePhone", phone);
+      localStorage.setItem("profileAddress", addr);
+
+      // Update UI
+      document.getElementById("userName").innerText = newName;
+      document.getElementById("modalNameDisplay").innerText = newName;
+      document.getElementById("avatarInitials").innerText = newName[0].toUpperCase();
+
+      showToast("Profile updated successfully!");
+      setTimeout(closeProfile, 500);
+    }
+
+    // Close on click outside
+    document.getElementById("profileModal").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("profileModal")) closeProfile();
+    });
+
+    // -- Navigation Logic --
+    function showView(viewId) {
+      // 1. Hide all sections
+      document.querySelectorAll(".view-section").forEach(el => el.classList.add("hidden"));
+      // 2. Show target
+      document.getElementById(viewId + "-view").classList.remove("hidden");
+
+      // 3. Update Title
+      const titles = {
+        'dashboard': 'Overview',
+        'resume': 'Resume Analysis',
+        'interview': 'Mock Interview'
+      };
+      document.getElementById("pageTitle").innerText = titles[viewId];
+
+      // 4. Update Nav Active State
+      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+      // Simple heuristic for nav highlighting
+      const navIndex = ['dashboard', 'resume', 'interview'].indexOf(viewId);
+      if (navIndex >= 0) document.querySelectorAll(".nav-item")[navIndex].classList.add("active");
+
+      // 5. Load Data if Dashboard
+      if (viewId === 'dashboard') loadDashboardData();
+    }
+
+    // -- Dashboard Data (UPDATED: Dynamic) --
+    async function loadDashboardData() {
+      try {
+        const res = await fetch(`${API}/user-dashboard/${email}`);
+        const data = await res.json();
+
+        // Check if new user (no resume, no stats)
+        if (!data.resume && (!data.stats || data.stats.totalQuestions === 0)) {
+          document.getElementById("emptyState").classList.remove("hidden");
+          document.getElementById("activeState").classList.add("hidden");
+        } else {
+          document.getElementById("emptyState").classList.add("hidden");
+          document.getElementById("activeState").classList.remove("hidden");
+
+          // Update Stats Cards
+          if (data.resume && data.resume.score) {
+            document.getElementById("resumeScore").innerText = data.resume.score + "%";
+          } else {
+            document.getElementById("resumeScore").innerText = "--%";
+          }
+
+          document.getElementById("totalQs").innerText = data.stats.totalQuestions;
+          document.getElementById("avgScore").innerText = data.stats.avgScore !== 0 ? data.stats.avgScore + "/10" : "--";
+
+          // Update Practice Time (Check if element exists first)
+          const timeEl = document.getElementById("practiceTime");
+          if (timeEl) timeEl.innerText = data.stats.practiceTime || "0m";
+
+          // Render Charts with Real Data
+          if (data.charts) {
+            renderCharts(data.charts);
+          }
+        }
+      } catch (e) {
+        console.error("Dashboard Load Error", e);
+        // Fallback for demo if server offline
+        document.getElementById("activeState").classList.remove("hidden");
+        document.getElementById("emptyState").classList.add("hidden");
+      }
+    }
+
+    // -- Chart Rendering (Strictly Static & Stable) --
+    let perfChartInstance = null;
+    let skillChartInstance = null;
+
+    function renderCharts(chartsData) {
+      // NOTE: Charts are now completely static for stability as requested.
+      const ctx1 = document.getElementById('perfChart').getContext('2d');
+      const ctx2 = document.getElementById('skillChart').getContext('2d');
+
+      // --- 1. Static Gradients ---
+      // Line Chart Gradient (Purple Fade)
+      let gradientPurple = ctx1.createLinearGradient(0, 0, 0, 400);
+      gradientPurple.addColorStop(0, 'rgba(157, 0, 255, 0.4)');
+      gradientPurple.addColorStop(1, 'rgba(157, 0, 255, 0)');
+
+      // Destroy old charts to prevent memory leaks/glitches
+      if (perfChartInstance) perfChartInstance.destroy();
+      if (skillChartInstance) skillChartInstance.destroy();
+
+      // --- 2. Performance Trend (Line) ---
+      perfChartInstance = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Performance Score',
+            data: [65, 72, 68, 78, 85, 88, 92], // Smooth demo curve
+            borderColor: '#9D00FF',
+            borderWidth: 3,
+            backgroundColor: gradientPurple,
+            fill: true,
+            tension: 0.4, // Smooths the line
+            pointBackgroundColor: '#121212', // Dark center for premium feel
+            pointBorderColor: '#9D00FF',
+            pointBorderWidth: 2,
+            pointRadius: 5, // Slightly larger fixed points
+            pointHoverRadius: 5 // No hover expansion
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false, // Fits container height strictly
+          animation: false, // NO ANIMATION
+          animations: {
+            colors: false,
+            x: false,
+            y: false
+          },
+          transitions: {
+            active: {
+              animation: {
+                duration: 0 // NO TRANSITION
+              }
+            }
+          },
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true, // Keep tooltips for utility, but instant
+              animation: false,
+              backgroundColor: 'rgba(20, 20, 20, 0.95)',
+              titleColor: '#fff',
+              bodyColor: '#ccc',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false,
+              callbacks: {
+                label: function (context) {
+                  return `Score: ${context.parsed.y}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              min: 50, // Fixed Range
+              max: 100, // Fixed Range
+              grid: {
+                color: 'rgba(255, 255, 255, 0.05)',
+                drawBorder: false
+              },
+              ticks: { display: false } // Minimalist
+            },
+            x: {
+              grid: { display: false, drawBorder: false },
+              ticks: {
+                color: '#666',
+                font: { family: "'Inter', sans-serif", size: 11 }
+              }
+            }
+          }
+        }
+      });
+
+      // --- 3. Skill Distribution (Doughnut) ---
+      skillChartInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Technical', 'Behavioral', 'System Design'],
+          datasets: [{
+            data: [55, 30, 25],
+            backgroundColor: [
+              '#9D00FF', // Purple
+              '#D9FF00', // Neon Lime
+              '#0094FF'  // Blue
+            ],
+            borderWidth: 0,
+            hoverOffset: 0 // No pop effect for total stability
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false, // NO ANIMATION
+          transitions: {
+            active: { animation: { duration: 0 } }
+          },
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                color: '#aaa',
+                usePointStyle: true,
+                pointStyle: 'circle',
+                boxWidth: 8,
+                padding: 20,
+                font: { family: "'Inter', sans-serif", size: 12 }
+              }
+            },
+            tooltip: {
+              enabled: true,
+              animation: false,
+              backgroundColor: 'rgba(20, 20, 20, 0.95)',
+              bodyColor: '#fff',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              callbacks: {
+                label: function (context) {
+                  return ` ${context.label}: ${context.parsed}%`;
+                }
+              }
+            }
+          },
+          cutout: '85%', // Ultra modern thin ring
+          layout: { padding: 20 }
+        }
+      });
+    }
+
+    // -- Toast --
+    function showToast(msg) {
+      const tBox = document.getElementById("toastContainer");
+      const t = document.createElement("div"); t.className = "toast";
+      t.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${msg}`;
+      tBox.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    // -- Log out --
+    function logout() {
+      localStorage.removeItem("isLoggedIn");
+      window.location.href = "index.html";
+    }
+
+    // -- File Handling (Resume) --
+    async function handleFile(files) {
+      if (!files[0]) return;
+      document.getElementById("dropZone").classList.add("hidden");
+      document.getElementById("analysisLoading").classList.remove("hidden");
+
+      const formData = new FormData();
+      formData.append("resume", files[0]);
+      formData.append("email", email);
+
+      try {
+        const res = await fetch(`${API}/upload-resume`, { method: "POST", body: formData });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Server Error (${res.status})`);
+        }
+        const data = await res.json();
+
+        document.getElementById("analysisLoading").classList.add("hidden");
+
+        if (!data.success) {
+          showToast(data.message || "Upload failed");
+          document.getElementById("dropZone").classList.remove("hidden");
+          return;
+        }
+
+        // Show Results
+        document.getElementById("analysisResult").classList.remove("hidden");
+        document.getElementById("anaScore").innerText = data.analysis.score;
+        document.getElementById("anaLevel").innerText = "Level: " + data.analysis.level;
+        document.getElementById("anaSummary").innerText = data.analysis.summary;
+
+        // Render Skills Badges
+        const sBox = document.getElementById("anaSkills"); sBox.innerHTML = "";
+        data.analysis.skills.forEach(s => {
+          sBox.innerHTML += `<span class="badge badge-highlight">${s}</span>`;
+        });
+
+        // Render Suggestions
+        const lBox = document.getElementById("anaSuggestions"); lBox.innerHTML = "";
+        data.analysis.suggestions.forEach(s => {
+          lBox.innerHTML += `<li><i class="fa-solid fa-check" style="color:var(--primary); margin-right:8px;"></i>${s}</li>`;
+        });
+
+      } catch (e) {
+        console.error("Upload Error Details:", e);
+        showToast("Error: " + (e.message || "Server Connection Failed"));
+        document.getElementById("dropZone").classList.remove("hidden");
+        document.getElementById("analysisLoading").classList.add("hidden");
+      }
+    }
+
+    function startInterview() {
+      showView('interview');
+    }
+
+    // -- Interview Logic --
+    document.getElementById("intMode").onchange = function () {
+      document.getElementById("customSkillBox").classList.toggle("hidden", this.value === 'resume');
+    };
+
+    async function initSession() {
+      const mode = document.getElementById("intMode").value;
+      const skill = document.getElementById("customSkill").value;
+
+      document.getElementById("chatBox").innerHTML = `<div class="msg ai">Starting ${mode} interview...</div>`;
+      await sendMsg("Let's start the interview.", true);
+    }
+
+    async function sendMsg(overrideText = null, isFirst = false) {
+      const input = document.getElementById("userInput");
+      const text = overrideText || input.value.trim();
+      if (!text) return;
+
+      if (!isFirst) {
+        document.getElementById("chatBox").innerHTML += `<div class="msg user">${text}</div>`;
+        input.value = "";
+      }
+
+      // Scroll to bottom
+      const box = document.getElementById("chatBox");
+      box.scrollTop = box.scrollHeight;
+
+      try {
+        const res = await fetch(`${API}/interview/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            message: text,
+            isFirst,
+            context: {
+              mode: document.getElementById("intMode").value,
+              skill: document.getElementById("customSkill").value
+            }
+          })
+        });
+        const data = await res.json();
+
+        if (data.evaluation) {
+          const fColor = data.evaluation.score > 7 ? "#00FF94" : "#FFB800";
+          document.getElementById("chatBox").innerHTML += `
+               <div class="msg ai" style="border-left: 3px solid ${fColor}; background: #222;">
+                 <strong>Feedback:</strong> ${data.evaluation.feedback} <br>
+                 <span style="font-size: 0.9rem; color: ${fColor};">Score: ${data.evaluation.score}/10</span>
+               </div>`;
+        }
+
+        document.getElementById("chatBox").innerHTML += `<div class="msg ai">${data.reply}</div>`;
+        box.scrollTop = box.scrollHeight;
+
+      } catch (e) {
+        showToast("AI Timeout / Offline");
+      }
+    }
+
+    // Init Page
+    loadDashboardData();
+
+  </script>
+</body>
+
+</html>

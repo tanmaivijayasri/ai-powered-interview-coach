@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InterviewCoach | Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Main Wrapper -->
+  <div class="auth-page-wrapper">
+
+    <!-- Left Side: Hero Section -->
+    <div class="auth-hero">
+      <h1 class="hero-title">Master Your Next<br>Technical Interview.</h1>
+      <p style="font-size: 1.25rem; color: #888; max-width: 500px; line-height: 1.6;">
+        AI-driven mock interviews customized for your role. Get real-time feedback and improve your confidence.
+      </p>
+
+      <div class="hero-features">
+        <div class="hero-item">
+          <div class="hero-icon"><i class="fa-solid fa-robot"></i></div>
+          <span>AI-Powered Analysis</span>
+        </div>
+        <div class="hero-item">
+          <div class="hero-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <span>Performance Analytics</span>
+        </div>
+        <div class="hero-item">
+          <div class="hero-icon"><i class="fa-solid fa-file-contract"></i></div>
+          <span>Resume Tailoring</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side: Interaction forms -->
+    <div class="auth-form-side">
+      <div class="auth-card">
+
+        <!-- LOGIN VIEW -->
+        <div id="loginView" class="auth-view">
+          <div class="form-header">
+            <h2>Welcome back</h2>
+            <p>Sign in to continue your progress.</p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Email Address</label>
+            <input type="email" id="loginEmail" placeholder="name@company.com">
+            <span class="error-message" id="loginEmailError"></span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Password</label>
+            <div class="password-wrapper">
+              <input type="password" id="loginPassword" placeholder="••••••••">
+              <i class="fa-regular fa-eye eye-icon" onclick="togglePass('loginPassword', this)"></i>
+            </div>
+            <span class="error-message" id="loginPasswordError"></span>
+            <a onclick="showForgot()" class="forgot-pass">Forgot Password?</a>
+          </div>
+
+          <button class="btn-primary" onclick="handleLogin()">Sign In <i class="fa-solid fa-arrow-right"></i></button>
+
+          <p class="switch-text">
+            Don't have an account? <span class="switch-link" onclick="showRegister()">Create free account</span>
+          </p>
+        </div>
+
+        <!-- REGISTER VIEW -->
+        <div id="registerView" class="auth-view hidden">
+          <div class="form-header">
+            <h2>Create Account</h2>
+            <p>Start your interview preparation journey.</p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Full Name</label>
+            <input type="text" id="regName" placeholder="e.g. John Doe">
+            <span class="error-message" id="regNameError"></span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Email Address</label>
+            <input type="email" id="regEmail" placeholder="name@company.com">
+            <span class="error-message" id="regEmailError"></span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Password</label>
+            <div class="password-wrapper">
+              <input type="password" id="regPassword" placeholder="Min 8 chars">
+              <i class="fa-regular fa-eye eye-icon" onclick="togglePass('regPassword', this)"></i>
+            </div>
+            <span class="error-message" id="regPasswordError"></span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Target Role</label>
+            <select id="regRole">
+              <option value="">Select Role...</option>
+              <option>Software Engineer</option>
+              <option>Product Manager</option>
+              <option>Data Scientist</option>
+              <option>Designer</option>
+            </select>
+            <span class="error-message" id="regRoleError"></span>
+          </div>
+
+          <button class="btn-primary" onclick="handleRegister()">Create Account</button>
+
+          <p class="switch-text">
+            Already have an account? <span class="switch-link" onclick="showLogin()">Sign In</span>
+          </p>
+        </div>
+
+        <!-- FORGOT PASSWORD VIEW -->
+        <div id="forgotView" class="auth-view hidden">
+          <div class="form-header">
+            <h2>Reset Password</h2>
+            <p>Enter your email to receive recovery instructions.</p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Email Address</label>
+            <input type="email" id="forgotEmail" placeholder="name@company.com">
+            <span class="error-message" id="forgotEmailError"></span>
+          </div>
+
+          <button class="btn-primary" onclick="handleForgot()">Send Reset Link</button>
+
+          <p class="switch-text">
+            <span class="switch-link" onclick="showLogin()"><i class="fa-solid fa-arrow-left"></i> Back to Login</span>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    const API_URL = "http://localhost:3000";
+
+    /* --- View Switching Logic --- */
+    function showLogin() {
+      switchView('loginView');
+    }
+    function showRegister() {
+      switchView('registerView');
+    }
+    function showForgot() {
+      switchView('forgotView');
+    }
+
+    function switchView(viewId) {
+      // Hide all views
+      document.querySelectorAll('.auth-view').forEach(el => el.classList.add('hidden'));
+      // Clear errors
+      document.querySelectorAll('.error-message').forEach(el => el.innerText = '');
+      // Show target
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    /* --- UI Utilities --- */
+    function togglePass(inputId, icon) {
+      const input = document.getElementById(inputId);
+      if (input.type === "password") {
+        input.type = "text";
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+      } else {
+        input.type = "password";
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+      }
+    }
+
+    /* --- Actions --- */
+    async function handleLogin() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      // Basic Validation
+      if (!email) return showErr("loginEmailError", "Email is required");
+      if (!password) return showErr("loginPasswordError", "Password is required");
+
+      try {
+        const res = await fetch(`${API_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("userEmail", email);
+          window.location.href = "dashboard.html";
+        } else {
+          if (data.message.includes('unavailable')) {
+            // Demo Fallback
+            alert("Backend unavailable. Demo Mode Active.");
+            localStorage.setItem("userEmail", email || "demo@user.com");
+            window.location.href = "dashboard.html";
+          } else {
+            showErr("loginPasswordError", data.message || "Login failed");
+          }
+        }
+      } catch (e) {
+        // Fallback for demo
+        localStorage.setItem("userEmail", "demo@user.com");
+        window.location.href = "dashboard.html";
+      }
+    }
+
+    async function handleRegister() {
+      const name = document.getElementById("regName").value;
+      const email = document.getElementById("regEmail").value;
+      const password = document.getElementById("regPassword").value;
+      const role = document.getElementById("regRole").value;
+
+      if (!name) return showErr("regNameError", "Name required");
+      if (!email) return showErr("regEmailError", "Email required");
+      if (password.length < 6) return showErr("regPasswordError", "Min 6 chars");
+
+      try {
+        const res = await fetch(`${API_URL}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, role })
+        });
+        if (res.ok) {
+          alert("Account created! Please sign in.");
+          showLogin();
+        } else {
+          const d = await res.json();
+          alert(d.message || "Error creating account");
+        }
+      } catch (e) {
+        alert("Server error");
+      }
+    }
+
+    function handleForgot() {
+      const email = document.getElementById("forgotEmail").value;
+      if (!email) return showErr("forgotEmailError", "Please enter your email");
+
+      // Mock functionality since no backend endpoint exists yet
+      alert(`Password reset link sent to ${email} (System Mock)`);
+      showLogin();
+    }
+
+    function showErr(id, msg) {
+      document.getElementById(id).innerText = msg;
+    }
+
+  </script>
+</body>
+
+</html>
