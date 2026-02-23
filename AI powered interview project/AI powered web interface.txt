@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Interview Platform | Login & Register</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  background: linear-gradient(
+    -45deg,
+    #4f46e5,
+    #7c3aed,
+    #9333ea,
+    #2563eb
+  );
+  background-size: 400% 400%;
+  animation: gradientMove 12s ease infinite;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;   /* 🔑 KEY FIX */
+  padding: 40px 0;           /* 🔑 allows scroll space */
+  overflow-x: hidden;
+  overflow-y: auto;          /* 🔑 ENABLE SCROLL */
+}
+
+.container {
+  background: #fff;
+  width: 460px;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.header {
+  text-align: center;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+.form-box {
+  padding: 25px;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.password-box {
+  position: relative;
+}
+
+.eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+.error {
+  color: red;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Soft glowing blobs */
+body::before,
+body::after {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(
+    circle,
+    rgba(255,255,255,0.25),
+    transparent 70%
+  );
+  filter: blur(80px);
+  animation: float 10s ease-in-out infinite;
+  z-index: -1;
+}
+
+
+
+body::before {
+  top: -120px;
+  left: -120px;
+}
+
+body::after {
+  bottom: -120px;
+  right: -120px;
+  animation-delay: 5s;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-40px); }
+  100% { transform: translateY(0); }
+}
+
+
+/* Google Button */
+.google-btn {
+  display: flex;
+  align-items: center;
+  background: #1a73e8;
+  color: white;
+  border-radius: 30px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  gap: 12px;
+}
+
+.google-btn:hover {
+  background: #1669c1;
+}
+
+.google-icon {
+  background: white;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.google-icon img {
+  width: 18px;
+}
+
+.divider {
+  text-align: center;
+  margin: 15px 0;
+  color: #999;
+}
+
+/* CAPTCHA */
+.captcha-box {
+  border: 1px solid #ccc;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  background: #f9f9f9;
+}
+
+.captcha-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.captcha-left input {
+  transform: scale(1.3);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button:hover {
+  background: #4f46e5;
+}
+
+.switch {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.switch span {
+  color: #4f46e5;
+  cursor: pointer;
+  font-weight: 600;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2 id="title">Login</h2>
+    <p>AI-Powered Interview Preparation 🚀</p>
+  </div>
+
+  <div class="form-box">
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+
+      <div class="google-btn">
+        <div class="google-icon">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
+        </div>
+        Continue with Google
+      </div>
+
+      <div class="divider">OR</div>
+
+      <div class="field">
+        <input type="email" id="loginEmail" placeholder="Email Address">
+        <div class="error" id="loginEmailError"></div>
+      </div>
+
+      <div class="field">
+        <div class="password-box">
+          <input type="password" id="loginPassword" placeholder="Password">
+          <span class="eye" onclick="togglePassword('loginPassword')">👁️</span>
+        </div>
+        <div class="error" id="loginPasswordError"></div>
+      </div>
+
+      <div class="field">
+        <div class="captcha-box">
+          <div class="captcha-left">
+            <input type="checkbox" id="loginCaptcha">
+            <span>I'm not a robot</span>
+          </div>
+        </div>
+        <div class="error" id="loginCaptchaError"></div>
+      </div>
+
+      <button onclick="login()">Login</button>
+
+      <div class="switch">
+        <span onclick="switchToRegister()">Don't have an account? Register</span>
+      </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerForm" style="display:none;">
+
+      <div class="google-btn">
+        <div class="google-icon">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
+        </div>
+        Continue with Google
+      </div>
+
+      <div class="divider">OR</div>
+
+      <div class="field">
+        <input type="text" id="regName" placeholder="Full Name (First Middle Last)">
+        <div class="error" id="regNameError"></div>
+      </div>
+
+      <div class="field">
+        <input type="email" id="regEmail" placeholder="Email Address">
+        <div class="error" id="regEmailError"></div>
+      </div>
+
+      <div class="field">
+        <div class="password-box">
+          <input type="password" id="regPassword" placeholder="Password">
+          <span class="eye" onclick="togglePassword('regPassword')">👁️</span>
+        </div>
+        <div class="error" id="regPasswordError"></div>
+      </div>
+
+      <div class="field">
+        <div class="password-box">
+          <input type="password" id="regConfirm" placeholder="Confirm Password">
+          <span class="eye" onclick="togglePassword('regConfirm')">👁️</span>
+        </div>
+        <div class="error" id="regConfirmError"></div>
+      </div>
+
+      <div class="field">
+        <select id="regRole">
+          <option value="">Select Interview Role</option>
+          <option>Software Developer</option>
+          <option>Web Developer</option>
+          <option>Data Science</option>
+          <option>AI / ML</option>
+          <option>Cyber Security</option>
+          <option>Cloud Computing</option>
+          <option>DevOps Engineer</option>
+          <option>Mobile App Developer</option>
+          <option>HR Interview</option>
+          <option>Business Analyst</option>
+          <option>Product Management</option>
+          <option>Fresher / Campus Interview</option>
+          <option>Internship Interview</option>
+          <option>Behavioral Interview</option>
+        </select>
+        <div class="error" id="regRoleError"></div>
+      </div>
+
+      <div class="field">
+        <input type="file" id="regResume">
+        <div class="error" id="regResumeError"></div>
+      </div>
+
+      <div class="field">
+        <div class="captcha-box">
+          <div class="captcha-left">
+            <input type="checkbox" id="regCaptcha">
+            <span>I'm not a robot</span>
+          </div>
+        </div>
+        <div class="error" id="regCaptchaError"></div>
+      </div>
+
+      <button onclick="register()">Register</button>
+
+      <div class="switch">
+        <span onclick="switchToLogin()">Already have an account? Login</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePassword(id) {
+  const input = document.getElementById(id);
+  input.type = input.type === "password" ? "text" : "password";
+}
+
+/* Clear form data (security) */
+function clearForm(formId) {
+  const form = document.getElementById(formId);
+  const inputs = form.querySelectorAll("input, select");
+  inputs.forEach(el => {
+    if (el.type === "checkbox") el.checked = false;
+    else el.value = "";
+  });
+}
+
+function switchToRegister() {
+  clearForm("loginForm");
+  loginForm.style.display = "none";
+  registerForm.style.display = "block";
+  title.innerText = "Register";
+}
+
+function switchToLogin() {
+  clearForm("registerForm");
+  registerForm.style.display = "none";
+  loginForm.style.display = "block";
+  title.innerText = "Login";
+}
+
+/* LOGIN VALIDATION */
+function login() {
+  let valid = true;
+  loginEmailError.innerText = "";
+  loginPasswordError.innerText = "";
+  loginCaptchaError.innerText = "";
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(loginEmail.value.trim())) {
+    loginEmailError.innerText = "* Enter a valid email";
+    valid = false;
+  }
+
+  if (loginPassword.value.trim() === "") {
+    loginPasswordError.innerText = "* Password is required";
+    valid = false;
+  }
+
+  if (!loginCaptcha.checked) {
+    loginCaptchaError.innerText = "* Please verify captcha";
+    valid = false;
+  }
+
+  if (valid) alert("Login Successful ✅");
+}
+
+/* REGISTER VALIDATION */
+function register() {
+  let valid = true;
+
+  regNameError.innerText = "";
+  regEmailError.innerText = "";
+  regPasswordError.innerText = "";
+  regConfirmError.innerText = "";
+  regRoleError.innerText = "";
+  regResumeError.innerText = "";
+  regCaptchaError.innerText = "";
+
+  if (!/^([A-Za-z]+)\s([A-Za-z]+)\s([A-Za-z]+)$/.test(regName.value.trim())) {
+    regNameError.innerText = "* Enter First Middle Last name";
+    valid = false;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(regEmail.value.trim())) {
+    regEmailError.innerText = "* Enter a valid email";
+    valid = false;
+  }
+
+  const passRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+  if (!passRegex.test(regPassword.value)) {
+    regPasswordError.innerText =
+      "* Min 8 chars, uppercase, lowercase, number & symbol";
+    valid = false;
+  }
+
+  if (regPassword.value !== regConfirm.value) {
+    regConfirmError.innerText = "* Passwords do not match";
+    valid = false;
+  }
+
+  if (regRole.value === "") {
+    regRoleError.innerText = "* Select an interview role";
+    valid = false;
+  }
+
+  if (!regResume.value) {
+    regResumeError.innerText = "* Upload your resume";
+    valid = false;
+  }
+
+  if (!regCaptcha.checked) {
+    regCaptchaError.innerText = "* Please verify captcha";
+    valid = false;
+  }
+
+  if (valid) alert("Registration Successful 🎉");
+}
+</script>
+<script>
+/* 🔐 STRICT LOGIN VALIDATION (ADDED ONLY) */
+function login() {
+  let valid = true;
+
+  loginEmailError.innerText = "";
+  loginPasswordError.innerText = "";
+  loginCaptchaError.innerText = "";
+
+  const email = loginEmail.value.trim();
+  const password = loginPassword.value;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const strongPassRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
+  /* Email check */
+  if (!emailRegex.test(email)) {
+    loginEmailError.innerText = "* Enter a valid email address";
+    valid = false;
+  }
+
+  /* Password strength check */
+  if (!strongPassRegex.test(password)) {
+    loginPasswordError.innerText =
+      "* Min 8 chars, uppercase, lowercase, number & symbol";
+    valid = false;
+  }
+
+  /* Captcha check */
+  if (!loginCaptcha.checked) {
+    loginCaptchaError.innerText = "* Please verify captcha";
+    valid = false;
+  }
+
+  if (valid) {
+    alert("Login Successful ✅");
+  }
+}
+</script>
+
+</body>
+</html>

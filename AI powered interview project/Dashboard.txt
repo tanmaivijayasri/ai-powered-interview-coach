@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | AI Interview Coach</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid #e2e8f0;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            text-align: center;
+            transition: var(--transition);
+            background: #f8fafc;
+            cursor: pointer;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: #eef2ff;
+        }
+
+        .chat-container {
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 1rem;
+            line-height: 1.5;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message.ai {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-top-left-radius: 0;
+            align-self: flex-start;
+        }
+
+        .message.user {
+            background: var(--primary-color);
+            color: white;
+            border-top-right-radius: 0;
+            align-self: flex-end;
+        }
+
+        .chat-input-area {
+            padding: 1.5rem;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #toastContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-top: 10px;
+            border-left: 4px solid var(--primary-color);
+            animation: slideIn 0.3s forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="background: var(--primary-color); padding: 0.5rem; border-radius: 8px;"><i
+                    class="fa-solid fa-brain" style="color: white;"></i></div>
+            <h2 style="font-size: 1.25rem;">Interview<span style="color: var(--primary-color);">Coach</span></h2>
+        </div>
+        <nav>
+            <a href="#" class="nav-item active" onclick="showView('dashboard')"><i class="fa-solid fa-house"></i>
+                Dashboard</a>
+            <a href="#" class="nav-item" onclick="showView('resume')"><i class="fa-solid fa-file-pdf"></i> Resume
+                Analysis</a>
+            <a href="#" class="nav-item" onclick="showView('interview')"><i class="fa-solid fa-comments"></i> Mock
+                Interview</a>
+        </nav>
+        <div style="margin-top: auto;">
+            <button class="btn" style="width: 100%; color: var(--error);" onclick="logout()"><i
+                    class="fa-solid fa-sign-out"></i> Logout</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header">
+            <div>
+                <h2 id="pageTitle">Overview</h2>
+                <p>Welcome back, <span id="userName">User</span>! 👋</p>
+            </div>
+            <div class="user-profile">
+                <div class="avatar" id="avatarInitials">U</div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="dashboard-view" class="view-section">
+            <div id="emptyState" class="hidden"
+                style="text-align: center; padding: 4rem; background: white; border-radius: 1rem; border: 2px dashed #e2e8f0;">
+                <h3 style="margin-bottom: 1rem;">No activity yet 🚀</h3>
+                <p style="margin-bottom: 2rem;">Upload your resume to begin or start your first mock interview.</p>
+                <button class="btn btn-primary" onclick="showView('resume')">Upload Resume</button>
+            </div>
+
+            <div id="activeState" class="hidden">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;"><i
+                                class="fa-solid fa-star"></i></div>
+                        <div class="stat-info">
+                            <h4>Resume Score</h4>
+                            <p id="resumeScore">--</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #ecfdf5; color: #10b981;"><i
+                                class="fa-solid fa-check-double"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4>Questions Solved</h4>
+                            <p id="totalQs">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fffbeb; color: #fbbf24;"><i
+                                class="fa-solid fa-trophy"></i></div>
+                        <div class="stat-info">
+                            <h4>Avg Score</h4>
+                            <p id="avgScore">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Performance History</h3><canvas id="perfChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Skill Growth</h3><canvas id="skillChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RESUME VIEW -->
+        <section id="resume-view" class="view-section hidden">
+            <div class="glass-card" style="padding: 2.5rem;">
+                <div id="uploadBox">
+                    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #94a3b8;"></i>
+                        <h3 style="margin-top: 1rem;">Click to upload or drag resume</h3>
+                        <p>PDF, DOCX accepted (Max 5MB)</p>
+                        <input type="file" id="fileInput" hidden onchange="handleFile(this.files)">
+                    </div>
+                </div>
+
+                <div id="analysisLoading" class="hidden" style="text-align: center; padding: 2rem;">
+                    <i class="fa-solid fa-circle-notch fa-spin"
+                        style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                    <p style="margin-top: 1rem;">AI is analyzing your resume depth...</p>
+                </div>
+
+                <div id="analysisResult" class="hidden">
+                    <div style="display: flex; gap: 2rem; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <h3 id="anaLevel">Level: --</h3>
+                            <p id="anaSummary" style="margin: 1rem 0;"></p>
+                            <h4>Detected Skills</h4>
+                            <div id="anaSkills"
+                                style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;"></div>
+                        </div>
+                        <div
+                            style="text-align: center; padding: 2rem; background: #f8fafc; border-radius: 1rem; border: 1px solid #e2e8f0;">
+                            <span style="font-size: 0.8rem; font-weight: 600;">STRENGTH SCORE</span>
+                            <div id="anaScore" style="font-size: 3rem; font-weight: 800; color: var(--primary-color);">0
+                            </div>
+                        </div>
+                    </div>
+                    <h4 style="margin-top: 2rem;">Improvement Roadmap</h4>
+                    <ul id="anaSuggestions" style="margin-top: 1rem; color: var(--text-muted);"></ul>
+                    <button class="btn btn-primary" style="margin-top: 2.5rem;" onclick="startInterview('resume')">Start
+                        AI Mock
+                        Interview</button>
+                    <button class="btn btn-secondary" style="margin-top: 2.5rem; margin-left:1rem;"
+                        onclick="location.reload()">Upload Different Resume</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTERVIEW VIEW -->
+        <section id="interview-view" class="view-section hidden">
+            <div style="display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem;">
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <h4>Settings</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <label style="font-size: 0.85rem; font-weight: 600;">Interview Mode</label>
+                        <select id="intMode" style="margin-top: 0.5rem;">
+                            <option value="resume">Resume Based (AI)</option>
+                            <option value="custom">Custom Skill</option>
+                        </select>
+                    </div>
+                    <div id="customSkillBox" class="hidden" style="margin-top: 1.5rem;">
+                        <label style="font-size: 0.85rem; font-weight: 600;">Target Skill</label>
+                        <input type="text" id="customSkill" placeholder="e.g. React, Python">
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 2rem;" onclick="initSession()">Start
+                        Session</button>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div>
+                            <h3>Mock Interview</h3>
+                            <p id="intStatus">Idle</p>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatBox">
+                        <div class="message ai">Select your mode and click "Start Session" to begin.</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <textarea id="userInput" placeholder="Type your answer here..."
+                            onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
+                        <button class="btn btn-primary" onclick="sendMsg()"><i
+                                class="fa-regular fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toastContainer"></div>
+
+    <script>
+        const API = "http://localhost:3000";
+        const email = localStorage.getItem("userEmail");
+        if (!email) window.location.href = "AI powered web interface.html";
+
+        document.getElementById("userName").innerText = email.split('@')[0];
+        document.getElementById("avatarInitials").innerText = email[0].toUpperCase();
+
+        function showToast(msg) {
+            const t = document.createElement("div"); t.className = "toast"; t.innerText = msg;
+            document.getElementById("toastContainer").appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        }
+
+        function showView(id) {
+            document.querySelectorAll(".view-section").forEach(v => v.classList.add("hidden"));
+            document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+            document.getElementById(id + "-view").classList.remove("hidden");
+            document.getElementById("pageTitle").innerText = id.charAt(0).toUpperCase() + id.slice(1);
+            if (event) event.target.closest(".nav-item")?.classList.add("active");
+            if (id === 'dashboard') loadDashboard();
+        }
+
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${API}/user-dashboard/${email}`);
+                const data = await res.json();
+
+                if (data.isNew) {
+                    document.getElementById("emptyState").classList.remove("hidden");
+                    document.getElementById("activeState").classList.add("hidden");
+                } else {
+                    document.getElementById("emptyState").classList.add("hidden");
+                    document.getElementById("activeState").classList.remove("hidden");
+
+                    if (data.resume) {
+                        document.getElementById("resumeScore").innerText = data.resume.score + "%";
+                    }
+                    document.getElementById("totalQs").innerText = data.progress.totalQuestions;
+                    document.getElementById("avgScore").innerText = data.progress.avgScore ? (data.progress.avgScore).toFixed(1) + "/10" : "--";
+                }
+            } catch (e) { showToast("Backend Connection Failed"); }
+        }
+
+        async function handleFile(files) {
+            if (!files[0]) return;
+            document.getElementById("uploadBox").classList.add("hidden");
+            document.getElementById("analysisLoading").classList.remove("hidden");
+
+            const formData = new FormData();
+            formData.append("resume", files[0]);
+            formData.append("email", email);
+
+            try {
+                const res = await fetch(`${API}/upload-resume`, { method: "POST", body: formData });
+                const data = await res.json();
+
+                document.getElementById("analysisLoading").classList.add("hidden");
+                if (!data.success) {
+                    showToast(data.message);
+                    document.getElementById("uploadBox").classList.remove("hidden");
+                    return;
+                }
+
+                document.getElementById("analysisResult").classList.remove("hidden");
+                document.getElementById("anaScore").innerText = data.analysis.score;
+                document.getElementById("anaLevel").innerText = "Profile Level: " + data.analysis.level;
+                document.getElementById("anaSummary").innerText = data.analysis.summary;
+
+                const sBox = document.getElementById("anaSkills"); sBox.innerHTML = "";
+                data.analysis.skills.forEach(s => sBox.innerHTML += `<span class="badge badge-blue">${s}</span>`);
+
+                const list = document.getElementById("anaSuggestions"); list.innerHTML = "";
+                data.analysis.suggestions.forEach(s => list.innerHTML += `<li>${s}</li>`);
+
+                showToast("Deep Analysis Complete!");
+            } catch (e) {
+                showToast("Server Error");
+                document.getElementById("uploadBox").classList.remove("hidden");
+                document.getElementById("analysisLoading").classList.add("hidden");
+            }
+        }
+
+        let isSessionActive = false;
+        async function initSession() {
+            const mode = document.getElementById("intMode").value;
+            const skill = document.getElementById("customSkill").value;
+
+            document.getElementById("chatBox").innerHTML = "<div class='message ai'>Thinking of a perfect question to start...</div>";
+            isSessionActive = true;
+
+            await sendMsg("Let's start the interview.", true);
+        }
+
+        async function sendMsg(overrideText = null, isFirst = false) {
+            const input = document.getElementById("userInput");
+            const text = overrideText || input.value.trim();
+            if (!text) return;
+
+            if (!isFirst) {
+                document.getElementById("chatBox").innerHTML += `<div class="message user">${text}</div>`;
+                input.value = "";
+            }
+
+            const typing = document.createElement("div"); typing.className = "message ai"; typing.innerText = "Analyzing answer & thinking...";
+            document.getElementById("chatBox").appendChild(typing);
+            document.getElementById("chatBox").scrollTop = document.getElementById("chatBox").scrollHeight;
+
+            try {
+                const res = await fetch(`${API}/interview/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email,
+                        message: text,
+                        isFirst,
+                        context: {
+                            mode: document.getElementById("intMode").value,
+                            skill: document.getElementById("customSkill").value
+                        }
+                    })
+                });
+                const data = await res.json();
+                typing.remove();
+
+                if (data.evaluation) {
+                    const scoreColor = data.evaluation.score > 7 ? "green" : (data.evaluation.score > 4 ? "orange" : "red");
+                    document.getElementById("chatBox").innerHTML += `<div class="message ai" style="background:#f0f9ff; border-left:4px solid #0369a1; font-size:0.9rem;">
+                        <strong>Feedback:</strong> ${data.evaluation.feedback} <br>
+                        <strong>Score:</strong> <span style="color:${scoreColor}">${data.evaluation.score}/10</span>
+                    </div>`;
+                }
+
+                document.getElementById("chatBox").innerHTML += `<div class="message ai">${data.reply}</div>`;
+                document.getElementById("chatBox").scrollTop = document.getElementById("chatBox").scrollHeight;
+            } catch (e) {
+                typing.remove();
+                showToast("AI Timeout");
+            }
+        }
+
+        document.getElementById("intMode").onchange = function () {
+            document.getElementById("customSkillBox").classList.toggle("hidden", this.value === "resume");
+        };
+
+        function logout() { localStorage.removeItem("isLoggedIn"); window.location.href = "AI powered web interface.html"; }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>
