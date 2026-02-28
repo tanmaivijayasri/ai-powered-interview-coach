@@ -1,6 +1,6 @@
 const fs = require('fs');
 if (typeof DOMMatrix === 'undefined') {
-    global.DOMMatrix = class DOMMatrix {};
+    global.DOMMatrix = class DOMMatrix { };
 }
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
@@ -12,17 +12,17 @@ let pdfImgConvert = null;
 // Try loading Tesseract
 try {
     Tesseract = require('tesseract.js');
-    console.log("✅ Tesseract.js loaded for OCR.");
+    console.log(" Tesseract.js loaded for OCR.");
 } catch (e) {
-    console.warn("⚠️ Tesseract.js not found. OCR disabled.");
+    console.warn("Tesseract.js not found. OCR disabled.");
 }
 
 // Try loading pdf-img-convert
 try {
     pdfImgConvert = require('pdf-img-convert');
-    console.log("✅ pdf-img-convert loaded for OCR.");
+    console.log(" pdf-img-convert loaded for OCR.");
 } catch (e) {
-    console.warn("⚠️ pdf-img-convert not found. OCR disabled.");
+    console.warn(" pdf-img-convert not found. OCR disabled.");
 }
 
 /**
@@ -44,25 +44,28 @@ async function extractResumeText(filePath, mimeType) {
 
         // --- PDF Processing ---
         if (mimeType === "application/pdf") {
-            // 1. Try Standard Text Extraction (pdf-parse)
+            // 1. Try Standard Text Extraction (pdf-parse v2)
             try {
-                const data = await pdfParse(fileBuffer);
+                const { PDFParse } = require('pdf-parse');
+                const parser = new PDFParse({ data: fileBuffer });
+                const data = await parser.getText();
                 extractedText = data.text ? data.text.trim() : "";
+                await parser.destroy(); // Always cleanup
             } catch (pdfError) {
-                console.warn("⚠️ Standard PDF parsing failed (pdf-parse). Attempting OCR fallback:", pdfError.message);
+                console.warn("Standard PDF parsing failed (pdf-parse). Attempting OCR fallback:", pdfError.message);
                 extractedText = ""; // Reset to empty to trigger OCR
             }
 
             // 2. Optical Character Recognition (OCR) Fallback
             if (extractedText.length < 50) {
-                console.log("⚠️ PDF text too short or parsing failed. Checking for OCR availability...");
+                console.log(" PDF text too short or parsing failed. Checking for OCR availability...");
 
                 if (Tesseract && pdfImgConvert) {
                     console.log("📷 Starting OCR extraction...");
                     try {
                         // helper function to get images
                         const outputImages = await pdfImgConvert.convert(filePath);
-                        console.log(`📷 Converted PDF to ${outputImages.length} images.`);
+                        console.log(` Converted PDF to ${outputImages.length} images.`);
 
                         for (let i = 0; i < outputImages.length; i++) {
                             console.log(`Processing page ${i + 1} of ${outputImages.length} with OCR...`);
@@ -70,7 +73,7 @@ async function extractResumeText(filePath, mimeType) {
                             extractedText += text + "\n";
                         }
                     } catch (ocrError) {
-                        console.error("❌ OCR Error:", ocrError.message);
+                        console.error(" OCR Error:", ocrError.message);
                         // If OCR fails, we just continue with what we have (empty string)
                     }
                 } else {

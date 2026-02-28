@@ -43,11 +43,11 @@
       </a>
 
       <!-- Placeholder for future features or just matching layout -->
-      <a class="nav-item" style="opacity: 0.5; cursor: not-allowed;">
+      <a class="nav-item" onclick="showView('analytics')">
         <i class="fa-solid fa-chart-line"></i>
-        <span>Analytics (Soon)</span>
+        <span>Performance</span>
       </a>
-      <a class="nav-item" style="opacity: 0.5; cursor: not-allowed;">
+      <a class="nav-item" onclick="showView('settings')">
         <i class="fa-solid fa-gear"></i>
         <span>Settings</span>
       </a>
@@ -237,6 +237,11 @@
               <span style="font-weight: 600;">AI Interviewer</span>
               <span id="intStatus" style="font-size: 0.8rem; color: #666; margin-left: 0.5rem;">• Idle</span>
             </div>
+            <div id="countdownBox" class="hidden"
+              style="background: rgba(217, 255, 0, 0.1); padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid #D9FF00;">
+              <span style="color: #D9FF00; font-size: 0.9rem; font-weight: 600;">⏱ <span
+                  id="timerText">60</span>s</span>
+            </div>
           </div>
 
           <div id="chatBox" class="chat-history">
@@ -254,6 +259,93 @@
       </div>
     </section>
 
+    <!-- 4. ANALYTICS (Performance History) -->
+    <section id="analytics-view" class="view-section hidden">
+      <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
+        <h3 style="margin-bottom: 2rem;">Interview History</h3>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid #222; color: #888; font-size: 0.9rem;">
+                <th style="padding: 1rem;">Date</th>
+                <th style="padding: 1rem;">Question</th>
+                <th style="padding: 1rem;">Your Answer</th>
+                <th style="padding: 1rem;">Score</th>
+                <th style="padding: 1rem;">Category</th>
+                <th style="padding: 1rem;">Time</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- Rows will be injected here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. SETTINGS / PROFILE VIEW -->
+    <section id="settings-view" class="view-section hidden">
+      <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
+
+        <!-- Left Column: Summary -->
+        <div
+          style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+          <h2 id="settingsNameDisplay" style="margin-bottom: 0.5rem;">User Name</h2>
+          <p id="settingsRoleDisplay" style="color: #888; margin-bottom: 0;">Software Engineer</p>
+        </div>
+
+        <!-- Right Column: Form -->
+        <div style="background: #111; padding: 2.5rem; border-radius: 16px; border: 1px solid #222;">
+          <h3 style="margin-bottom: 2rem;">Professional Profile</h3>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">Full Name</label>
+              <input type="text" id="setFullName" class="profile-input" style="width:100%;" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">Target Job Role</label>
+              <input type="text" id="setRole" class="profile-input" style="width:100%;"
+                placeholder="e.g. Senior Backend Engineer">
+            </div>
+            <div class="form-group">
+              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">Experience
+                Level</label>
+              <input type="text" id="setExperience" class="profile-input" style="width:100%;"
+                placeholder="Entry, Mid, Senior">
+            </div>
+            <div class="form-group">
+              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">GitHub Link</label>
+              <input type="text" id="setGithub" class="profile-input" style="width:100%;"
+                placeholder="https://github.com/username">
+            </div>
+            <div class="form-group">
+              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">LinkedIn Link</label>
+              <input type="text" id="setLinkedin" class="profile-input" style="width:100%;"
+                placeholder="https://linkedin.com/in/username">
+            </div>
+            <div class="form-group">
+              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">Portfolio /
+                Website</label>
+              <input type="text" id="setPortfolio" class="profile-input" style="width:100%;"
+                placeholder="https://myprojects.com">
+            </div>
+            <div class="form-group">
+              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">Phone Number</label>
+              <input type="text" id="setPhone" class="profile-input" style="width:100%;"
+                placeholder="+1 (555) 000-0000">
+            </div>
+          </div>
+
+          <div
+            style="margin-top: 2.5rem; border-top: 1px solid #222; padding-top: 2rem; display: flex; justify-content: flex-end;">
+            <button class="btn-primary" onclick="saveSettings()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- PROFILE MODAL -->
@@ -263,14 +355,7 @@
 
       <!-- Left: Sidebar -->
       <div class="profile-sidebar">
-        <div class="profile-img-wrapper">
-          <img src="https://ui-avatars.com/api/?name=User&background=D9FF00&color=000" id="modalAvatar"
-            class="profile-img">
-          <div class="edit-avatar-badge" onclick="alert('Upload feature coming soon!')">
-            <i class="fa-solid fa-camera"></i>
-          </div>
-        </div>
-        <h2 class="profile-name" id="modalNameDisplay">User Name</h2>
+        <h2 class="profile-name" id="modalNameDisplay" style="margin-top: 2rem;">User Name</h2>
         <p class="profile-role" id="modalRoleDisplay">Software Engineer</p>
 
         <div class="social-links">
@@ -294,9 +379,17 @@
             <input type="text" id="editName" class="profile-input" value="User Name">
           </div>
           <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Current Job Role</label>
+            <input type="text" id="editRole" class="profile-input" placeholder="e.g. Software Engineer">
+          </div>
+          <div class="form-group">
             <label style="color:#888; font-size:0.85rem;">Email</label>
             <input type="email" id="editEmail" class="profile-input" value="user@example.com" disabled
               style="opacity:0.6; cursor:not-allowed;">
+          </div>
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Experience Level</label>
+            <input type="text" id="editExperience" class="profile-input" value="Entry">
           </div>
           <div class="form-group">
             <label style="color:#888; font-size:0.85rem;">Phone</label>
@@ -345,28 +438,50 @@
     if (!email) window.location.href = "index.html";
 
     // Initialize UI
-    const defaultName = email.split('@')[0];
+    const storedName = localStorage.getItem("userName");
+    const defaultName = storedName || email.split('@')[0];
     document.getElementById("userName").innerText = defaultName;
-    document.getElementById("avatarInitials").innerText = email[0].toUpperCase();
+    document.getElementById("avatarInitials").innerText = defaultName[0].toUpperCase();
 
     // Make Avatar Clickable
     document.getElementById("avatarInitials").style.cursor = "pointer";
     document.getElementById("avatarInitials").onclick = openProfile;
 
+    // Set Role in Modal
+    const storedRole = localStorage.getItem("userRole") || "Software Engineer";
+    document.getElementById("modalRoleDisplay").innerText = storedRole;
+
+    // Fetch Profile for Initials
+    async function initSidebarProfile() {
+      try {
+        const res = await fetch(`${API}/user-profile/${email}`);
+        const user = await res.json();
+        const initialsEl = document.getElementById("avatarInitials");
+        if (initialsEl && user.name) {
+          initialsEl.innerText = user.name[0].toUpperCase();
+          initialsEl.innerHTML = user.name[0].toUpperCase();
+        }
+      } catch (e) { }
+    }
+    initSidebarProfile();
+
     // -- Profile Modal Logic --
-    function openProfile() {
+    async function openProfile() {
       const modal = document.getElementById("profileModal");
-      const name = localStorage.getItem("profileName") || defaultName;
 
-      // Populate Fields
-      document.getElementById("editName").value = name;
-      document.getElementById("modalNameDisplay").innerText = name;
-      document.getElementById("editEmail").value = email;
-      document.getElementById("editPhone").value = localStorage.getItem("profilePhone") || "";
-      document.getElementById("editAddress").value = localStorage.getItem("profileAddress") || "";
+      try {
+        const res = await fetch(`${API}/user-profile/${email}`);
+        const user = await res.json();
 
-      // Update Modal Avatar
-      document.getElementById("modalAvatar").src = `https://ui-avatars.com/api/?name=${name}&background=D9FF00&color=000`;
+        document.getElementById("editName").value = user.name || "";
+        document.getElementById("editRole").value = user.role || "";
+        document.getElementById("modalNameDisplay").innerText = user.name || "User Name";
+        document.getElementById("modalRoleDisplay").innerText = user.role || "Software Engineer";
+        document.getElementById("editEmail").value = email;
+        document.getElementById("editExperience").value = user.experienceLevel || "Entry";
+        document.getElementById("editPhone").value = user.phone || "";
+        // No avatar display, using initials in header
+      } catch (e) { console.error("Open Profile Error", e); }
 
       modal.classList.add("active");
     }
@@ -375,23 +490,41 @@
       document.getElementById("profileModal").classList.remove("active");
     }
 
-    function saveProfile() {
-      const newName = document.getElementById("editName").value;
-      const phone = document.getElementById("editPhone").value;
-      const addr = document.getElementById("editAddress").value;
+    async function saveProfile() {
+      const payload = {
+        name: document.getElementById("editName").value,
+        role: document.getElementById("editRole").value,
+        experienceLevel: document.getElementById("editExperience").value,
+        phone: document.getElementById("editPhone").value
+      };
 
-      // Save locally for demo
-      localStorage.setItem("profileName", newName);
-      localStorage.setItem("profilePhone", phone);
-      localStorage.setItem("profileAddress", addr);
+      try {
+        const res = await fetch(`${API}/user-profile/${email}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Profile saved!");
+          localStorage.setItem("userName", data.user.name);
+          localStorage.setItem("userRole", data.user.role || "Software Engineer");
+          document.getElementById("userName").innerText = data.user.name;
 
-      // Update UI
-      document.getElementById("userName").innerText = newName;
-      document.getElementById("modalNameDisplay").innerText = newName;
-      document.getElementById("avatarInitials").innerText = newName[0].toUpperCase();
+          // Update Initials
+          const initialsEl = document.getElementById("avatarInitials");
+          if (initialsEl) initialsEl.innerText = data.user.name[0].toUpperCase();
 
-      showToast("Profile updated successfully!");
-      setTimeout(closeProfile, 500);
+          closeProfile();
+
+          // Refresh dashboard if active
+          if (!document.getElementById("dashboard-view").classList.contains("hidden")) {
+            loadDashboardData();
+          }
+        }
+      } catch (e) {
+        showToast("Error saving profile.");
+      }
     }
 
     // Close on click outside
@@ -410,19 +543,88 @@
       const titles = {
         'dashboard': 'Overview',
         'resume': 'Resume Analysis',
-        'interview': 'Mock Interview'
+        'interview': 'Mock Interview',
+        'analytics': 'Performance History',
+        'settings': 'Settings & Profile'
       };
       document.getElementById("pageTitle").innerText = titles[viewId];
 
       // 4. Update Nav Active State
       document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
       // Simple heuristic for nav highlighting
-      const navIndex = ['dashboard', 'resume', 'interview'].indexOf(viewId);
+      const navItems = ['dashboard', 'resume', 'interview', 'analytics', 'settings'];
+      const navIndex = navItems.indexOf(viewId);
       if (navIndex >= 0) document.querySelectorAll(".nav-item")[navIndex].classList.add("active");
 
-      // 5. Load Data if Dashboard
+      // 5. Load Data
       if (viewId === 'dashboard') loadDashboardData();
+      if (viewId === 'analytics') loadHistory();
+      if (viewId === 'settings') loadSettings();
     }
+
+    /* --- SETTINGS & PROFILE LOGIC --- */
+    function selectAvatar(id, el) { } // No-op
+
+    async function loadSettings() {
+      try {
+        const res = await fetch(`${API}/user-profile/${email}`);
+        const user = await res.json();
+
+        document.getElementById('setFullName').value = user.name || "";
+        document.getElementById('setRole').value = user.role || "";
+        document.getElementById('setExperience').value = user.experienceLevel || "Entry";
+        document.getElementById('setGithub').value = user.github || "";
+        document.getElementById('setLinkedin').value = user.linkedin || "";
+        document.getElementById('setPortfolio').value = user.portfolio || "";
+        document.getElementById('setPhone').value = user.phone || "";
+
+        document.getElementById('settingsNameDisplay').innerText = user.name || "User Name";
+        document.getElementById('settingsRoleDisplay').innerText = user.role || "Software Engineer";
+      } catch (e) { console.error("Load Settings Error", e); }
+    }
+
+
+
+    async function saveSettings() {
+      const payload = {
+        name: document.getElementById('setFullName').value,
+        role: document.getElementById('setRole').value,
+        experienceLevel: document.getElementById('setExperience').value,
+        github: document.getElementById('setGithub').value,
+        linkedin: document.getElementById('setLinkedin').value,
+        portfolio: document.getElementById('setPortfolio').value,
+        phone: document.getElementById('setPhone').value
+      };
+
+      try {
+        const res = await fetch(`${API}/user-profile/${email}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Profile updated successfully!");
+          localStorage.setItem("userName", data.user.name);
+          localStorage.setItem("userRole", data.user.role || "Software Engineer");
+          document.getElementById("userName").innerText = data.user.name;
+
+          // Update displays 
+          document.getElementById('settingsNameDisplay').innerText = data.user.name;
+          document.getElementById('settingsRoleDisplay').innerText = data.user.role;
+
+          // Update Initials
+          const initialsEl = document.getElementById("avatarInitials");
+          if (initialsEl) initialsEl.innerText = data.user.name[0].toUpperCase();
+        } else {
+          showToast("Update failed: " + data.message);
+        }
+      } catch (e) {
+        console.error(e);
+        showToast("Error updating profile.");
+      }
+    }
+
 
     // -- Dashboard Data (UPDATED: Dynamic) --
     async function loadDashboardData() {
@@ -465,22 +667,56 @@
       }
     }
 
+    async function loadHistory() {
+      const tbody = document.getElementById("historyTableBody");
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">Loading history...</td></tr>';
+
+      try {
+        const res = await fetch(`${API}/interview-history/${email}`);
+        const data = await res.json();
+
+        if (!data.success || data.history.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#666;">No interview history found. Start a practice session!</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.history.map(h => {
+          const date = new Date(h.timestamp).toLocaleDateString();
+          const qText = h.question.length > 50 ? h.question.substring(0, 50) + "..." : h.question;
+          const aText = h.userAnswer ? (h.userAnswer.length > 50 ? h.userAnswer.substring(0, 50) + "..." : h.userAnswer) : "N/A";
+          const scoreColor = h.score >= 8 ? "#D9FF00" : (h.score >= 5 ? "#FFB800" : "#ff4444");
+
+          return `
+            <tr style="border-bottom: 1px solid #1a1a1a; transition: background 0.2s;" onmouseover="this.style.background='#161616'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 1rem; color: #888;">${date}</td>
+              <td style="padding: 1rem; color: #ccc;" title="${h.question}">${qText}</td>
+              <td style="padding: 1rem; color: #888; font-style: italic;" title="${h.userAnswer || ''}">${aText}</td>
+              <td style="padding: 1rem; font-weight: 600; color: ${scoreColor}">${h.score}/10</td>
+              <td style="padding: 1rem;"><span class="badge" style="background:#222; border:1px solid #333; color:#aaa; padding:2px 8px; border-radius:4px; font-size:0.8rem;">${h.category || 'Tech'}</span></td>
+              <td style="padding: 1rem; color: #666;">${h.timeTaken || 0}s</td>
+            </tr>
+          `;
+        }).join("");
+
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#ff4444;">Failed to load history.</td></tr>';
+      }
+    }
+
     // -- Chart Rendering (Strictly Static & Stable) --
     let perfChartInstance = null;
     let skillChartInstance = null;
 
     function renderCharts(chartsData) {
-      // NOTE: Charts are now completely static for stability as requested.
       const ctx1 = document.getElementById('perfChart').getContext('2d');
       const ctx2 = document.getElementById('skillChart').getContext('2d');
 
       // --- 1. Static Gradients ---
-      // Line Chart Gradient (Purple Fade)
       let gradientPurple = ctx1.createLinearGradient(0, 0, 0, 400);
       gradientPurple.addColorStop(0, 'rgba(157, 0, 255, 0.4)');
       gradientPurple.addColorStop(1, 'rgba(157, 0, 255, 0)');
 
-      // Destroy old charts to prevent memory leaks/glitches
+      // Destroy old charts
       if (perfChartInstance) perfChartInstance.destroy();
       if (skillChartInstance) skillChartInstance.destroy();
 
@@ -488,37 +724,28 @@
       perfChartInstance = new Chart(ctx1, {
         type: 'line',
         data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          labels: (chartsData && chartsData.trendLabels && chartsData.trendLabels.length > 0) ? chartsData.trendLabels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
           datasets: [{
             label: 'Performance Score',
-            data: [65, 72, 68, 78, 85, 88, 92], // Smooth demo curve
+            data: (chartsData && chartsData.trendData && chartsData.trendData.length > 0) ? chartsData.trendData : [65, 72, 68, 78, 85, 88, 92],
             borderColor: '#9D00FF',
             borderWidth: 3,
             backgroundColor: gradientPurple,
             fill: true,
-            tension: 0.4, // Smooths the line
-            pointBackgroundColor: '#121212', // Dark center for premium feel
+            tension: 0.4,
+            pointBackgroundColor: '#121212',
             pointBorderColor: '#9D00FF',
             pointBorderWidth: 2,
-            pointRadius: 5, // Slightly larger fixed points
-            pointHoverRadius: 5 // No hover expansion
+            pointRadius: 5,
+            pointHoverRadius: 7
           }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // Fits container height strictly
-          animation: false, // NO ANIMATION
-          animations: {
-            colors: false,
-            x: false,
-            y: false
-          },
-          transitions: {
-            active: {
-              animation: {
-                duration: 0 // NO TRANSITION
-              }
-            }
+          maintainAspectRatio: false,
+          animation: {
+            duration: 1000,
+            easing: 'easeInOutQuart'
           },
           interaction: {
             mode: 'index',
@@ -527,32 +754,25 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              enabled: true, // Keep tooltips for utility, but instant
-              animation: false,
+              enabled: true,
               backgroundColor: 'rgba(20, 20, 20, 0.95)',
               titleColor: '#fff',
               bodyColor: '#ccc',
               borderColor: 'rgba(255,255,255,0.1)',
               borderWidth: 1,
               padding: 12,
-              displayColors: false,
-              callbacks: {
-                label: function (context) {
-                  return `Score: ${context.parsed.y}`;
-                }
-              }
+              displayColors: false
             }
           },
           scales: {
             y: {
-              beginAtZero: false,
-              min: 50, // Fixed Range
-              max: 100, // Fixed Range
+              beginAtZero: true,
+              max: 10, // Since score is 0-10 in the backend evaluation
               grid: {
                 color: 'rgba(255, 255, 255, 0.05)',
                 drawBorder: false
               },
-              ticks: { display: false } // Minimalist
+              ticks: { color: '#666' }
             },
             x: {
               grid: { display: false, drawBorder: false },
@@ -571,22 +791,22 @@
         data: {
           labels: ['Technical', 'Behavioral', 'System Design'],
           datasets: [{
-            data: [55, 30, 25],
+            data: (chartsData && chartsData.skills) ? chartsData.skills : [0, 0, 0],
             backgroundColor: [
               '#9D00FF', // Purple
               '#D9FF00', // Neon Lime
               '#0094FF'  // Blue
             ],
             borderWidth: 0,
-            hoverOffset: 0 // No pop effect for total stability
+            hoverOffset: 10
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: false, // NO ANIMATION
-          transitions: {
-            active: { animation: { duration: 0 } }
+          animation: {
+            duration: 1000,
+            easing: 'easeOutBounce'
           },
           plugins: {
             legend: {
@@ -602,19 +822,13 @@
             },
             tooltip: {
               enabled: true,
-              animation: false,
               backgroundColor: 'rgba(20, 20, 20, 0.95)',
               bodyColor: '#fff',
               borderColor: 'rgba(255,255,255,0.1)',
-              borderWidth: 1,
-              callbacks: {
-                label: function (context) {
-                  return ` ${context.label}: ${context.parsed}%`;
-                }
-              }
+              borderWidth: 1
             }
           },
-          cutout: '85%', // Ultra modern thin ring
+          cutout: '80%',
           layout: { padding: 20 }
         }
       });
@@ -692,30 +906,67 @@
     }
 
     // -- Interview Logic --
+    let intTimer = null;
+    let timeLeft = 60;
+    let timeTakenCounter = 0;
+
     document.getElementById("intMode").onchange = function () {
       document.getElementById("customSkillBox").classList.toggle("hidden", this.value === 'resume');
     };
+
+    function startTimer() {
+      stopTimer();
+      timeLeft = 60;
+      timeTakenCounter = 0;
+      document.getElementById("timerText").innerText = timeLeft;
+      document.getElementById("countdownBox").classList.remove("hidden");
+
+      intTimer = setInterval(() => {
+        timeLeft--;
+        timeTakenCounter++;
+        document.getElementById("timerText").innerText = timeLeft;
+        if (timeLeft <= 0) {
+          stopTimer();
+          showToast("Time's up! Submitting answer...");
+          sendMsg(null, false, true);
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (intTimer) clearInterval(intTimer);
+      document.getElementById("countdownBox").classList.add("hidden");
+    }
 
     async function initSession() {
       const mode = document.getElementById("intMode").value;
       const skill = document.getElementById("customSkill").value;
 
+      document.getElementById("intStatus").innerText = "• Active";
+      document.getElementById("intStatus").style.color = "#D9FF00";
       document.getElementById("chatBox").innerHTML = `<div class="msg ai">Starting ${mode} interview...</div>`;
+
       await sendMsg("Let's start the interview.", true);
     }
 
-    async function sendMsg(overrideText = null, isFirst = false) {
+    async function sendMsg(overrideText = null, isFirst = false, isTimeout = false) {
       const input = document.getElementById("userInput");
-      const text = overrideText || input.value.trim();
-      if (!text) return;
+      const text = isTimeout ? "[TIMEOUT]" : (overrideText || input.value.trim());
+
+      const box = document.getElementById("chatBox");
+      const mode = document.getElementById("intMode").value;
+      const skill = document.getElementById("customSkill").value;
+
+      let timeUsed = timeTakenCounter;
+      stopTimer();
+
+      if (!text && !isTimeout) return;
 
       if (!isFirst) {
-        document.getElementById("chatBox").innerHTML += `<div class="msg user">${text}</div>`;
+        box.innerHTML += `<div class="msg user">${text}</div>`;
         input.value = "";
       }
 
-      // Scroll to bottom
-      const box = document.getElementById("chatBox");
       box.scrollTop = box.scrollHeight;
 
       try {
@@ -725,29 +976,34 @@
           body: JSON.stringify({
             email,
             message: text,
+            context: { mode, skill },
             isFirst,
-            context: {
-              mode: document.getElementById("intMode").value,
-              skill: document.getElementById("customSkill").value
-            }
+            timeTaken: timeUsed
           })
         });
+
         const data = await res.json();
 
+        // 1. Show Evaluation Feedback if any
         if (data.evaluation) {
           const fColor = data.evaluation.score > 7 ? "#00FF94" : "#FFB800";
-          document.getElementById("chatBox").innerHTML += `
-               <div class="msg ai" style="border-left: 3px solid ${fColor}; background: #222;">
-                 <strong>Feedback:</strong> ${data.evaluation.feedback} <br>
-                 <span style="font-size: 0.9rem; color: ${fColor};">Score: ${data.evaluation.score}/10</span>
+          box.innerHTML += `
+               <div class="feedback-card" style="border-left: 3px solid ${fColor}; background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                 <strong style="color: ${fColor}">AI Feedback (Score: ${data.evaluation.score}/10)</strong> <br>
+                 <p style="font-size: 0.85rem; color: #aaa; margin-top: 0.5rem;">${data.evaluation.feedback}</p>
                </div>`;
         }
 
-        document.getElementById("chatBox").innerHTML += `<div class="msg ai">${data.reply}</div>`;
+        // 2. Add AI reply
+        box.innerHTML += `<div class="msg ai">${data.reply}</div>`;
         box.scrollTop = box.scrollHeight;
 
+        // Restart timer for next question
+        startTimer();
+
       } catch (e) {
-        showToast("AI Timeout / Offline");
+        console.error("Chat Error", e);
+        showToast("AI response failed.");
       }
     }
 

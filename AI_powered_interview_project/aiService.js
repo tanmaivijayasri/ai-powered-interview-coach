@@ -64,25 +64,89 @@ function getSmartMockResponse(prompt) {
 
     // --- MODE 2: GENERATE QUESTION (Server asking for next question) ---
     if (p.includes("generate the next interview question")) {
-        // Avoid "Start" logic here to prevent loops.
-        // Just pick a relevant question based on topic if possible, or random.
+        // Extract details from context
+        const topicMatch = prompt.match(/Topic:\s*(.*)/i);
+        const extractedTopic = topicMatch ? topicMatch[1].trim() : "";
+        const roleMatch = prompt.match(/Job Role:\s*(.*)/i);
+        const extractedRole = roleMatch ? roleMatch[1].trim() : "";
+        const skillsMatch = prompt.match(/- Detected Skills:\s*(.*)/i);
+        const extractedSkills = skillsMatch ? skillsMatch[1].trim() : "";
 
-        const topics = [
-            "Explain the difference between let, const, and var.",
-            "How does the Event Loop work in Node.js?",
-            "What are React Hooks and why do we use them?",
-            "Explain the concept of RESTful APIs.",
-            "What is the difference between SQL and NoSQL?",
-            "How do you optimize a website for performance?",
-            "Explain dependency injection.",
-            "What is a closure in JavaScript?"
-        ];
+        const combinedContext = `${extractedTopic} ${extractedRole} ${extractedSkills}`.toLowerCase();
 
-        // Pseudo-random selection based on prompt length to vary it slightly
-        const index = prompt.length % topics.length;
+        // Topic mappings
+        const specificQuestions = {
+            "react": [
+                "What are React Hooks and why do we use them?",
+                "Can you explain the difference between state and props?",
+                "How does the virtual DOM work in React?"
+            ],
+            "node.js": [
+                "How does the Event Loop work in Node.js?",
+                "What is the purpose of middleware in Express.js?",
+                "Explain how streams work in Node.js."
+            ],
+            "node": [
+                "How does the Event Loop work in Node.js?",
+                "What is the purpose of middleware in Express.js?",
+                "Explain how streams work in Node.js."
+            ],
+            "javascript": [
+                "Explain the difference between let, const, and var.",
+                "What is a closure in JavaScript?",
+                "Can you explain promises and async/await?"
+            ],
+            "java": [
+                "What is the difference between an interface and an abstract class?",
+                "Explain the concept of multithreading in Java.",
+                "How does Garbage Collection work in Java?"
+            ],
+            "python": [
+                "What are decorators in Python and how do you use them?",
+                "Can you explain the difference between lists and tuples?",
+                "What is the Global Interpreter Lock (GIL) in Python?"
+            ],
+            "sql": [
+                "What is the difference between a LEFT JOIN and an INNER JOIN?",
+                "Explain what indexing is in a database.",
+                "How do you optimize a slow-running SQL query?"
+            ],
+            "database": [
+                "What is the difference between SQL and NoSQL?",
+                "Explain what indexing is in a database.",
+                "How do you define ACID properties?"
+            ],
+            "aws": [
+                "What is the difference between an EC2 instance and a serverless Lambda function?",
+                "Can you explain what an S3 bucket is and how to secure it?",
+                "How do you use IAM to control AWS resources?"
+            ]
+        };
+
+        let chosenQuestion = "";
+
+        // Find matching topic in our mapping
+        const topicKey = Object.keys(specificQuestions).find(key => combinedContext.includes(key));
+
+        if (topicKey) {
+            const list = specificQuestions[topicKey];
+            const index = prompt.length % list.length;
+            chosenQuestion = list[index];
+        } else {
+            const displayTopic = extractedTopic || extractedRole || "your area of expertise";
+            const fallbackTopics = [
+                `Can you explain a complex concept related to ${displayTopic}?`,
+                `What are the best practices for working with ${displayTopic}?`,
+                `Describe a challenging problem you solved using ${displayTopic}.`,
+                `If you were designing a scalable architecture for a system involving ${displayTopic}, what key factors would you consider?`,
+                `Can you tell me about the most difficult bug you've had to fix in ${displayTopic}?`
+            ];
+            const index = prompt.length % fallbackTopics.length;
+            chosenQuestion = fallbackTopics[index];
+        }
 
         return {
-            message: topics[index],
+            message: chosenQuestion,
             feedback: "Moving to next topic.",
             score: 0
         };

@@ -112,6 +112,16 @@
             <span class="error-message" id="regRoleError"></span>
           </div>
 
+          <div class="input-group">
+            <label class="input-label">Experience Level</label>
+            <select id="regExperience">
+              <option value="Entry">Entry (0-2 years)</option>
+              <option value="Mid">Mid (2-5 years)</option>
+              <option value="Senior">Senior (5-10 years)</option>
+              <option value="Lead">Lead (10+ years)</option>
+            </select>
+          </div>
+
           <button class="btn-primary" onclick="handleRegister()">Create Account</button>
 
           <p class="switch-text">
@@ -199,6 +209,11 @@
         if (res.ok) {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("userEmail", email);
+          if (data.user) {
+            localStorage.setItem("userName", data.user.name);
+            localStorage.setItem("userRole", data.user.role);
+            localStorage.setItem("userExperience", data.user.experienceLevel);
+          }
           window.location.href = "dashboard.html";
         } else {
           if (data.message.includes('unavailable')) {
@@ -222,26 +237,28 @@
       const email = document.getElementById("regEmail").value;
       const password = document.getElementById("regPassword").value;
       const role = document.getElementById("regRole").value;
-
-      if (!name) return showErr("regNameError", "Name required");
-      if (!email) return showErr("regEmailError", "Email required");
-      if (password.length < 6) return showErr("regPasswordError", "Min 6 chars");
+      const experienceLevel = document.getElementById("regExperience").value;
 
       try {
         const res = await fetch(`${API_URL}/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role })
+          body: JSON.stringify({ name, email, password, role, experienceLevel })
         });
+
+        const data = await res.json();
+        console.log("REGISTER RESPONSE:", data);
+
         if (res.ok) {
-          alert("Account created! Please sign in.");
+          alert("✅ Account created successfully!");
           showLogin();
         } else {
-          const d = await res.json();
-          alert(d.message || "Error creating account");
+          alert("❌ " + JSON.stringify(data));
         }
+
       } catch (e) {
-        alert("Server error");
+        console.error("Frontend error:", e);
+        alert("Frontend error occurred");
       }
     }
 
