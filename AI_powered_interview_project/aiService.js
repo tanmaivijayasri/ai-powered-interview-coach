@@ -36,28 +36,10 @@ function getSmartMockResponse(prompt) {
 
     // --- MODE 2: EVALUATION (Server asking to score an answer) ---
     if (p.includes("evaluate this answer")) {
-        // Extract the user's actual answer from the prompt string
-        // Format: Evaluate this answer: "USER_TEXT".
-        const match = prompt.match(/Evaluate this answer: "(.*)"/);
-        const userMsg = match ? match[1].toLowerCase() : "";
-
-        let score = 5;
-        let feedback = "Okay answer.";
-
-        if (userMsg.length < 5) {
-            score = 2;
-            feedback = "Your answer provides no detail. Please elaborate.";
-        } else if (userMsg.includes("java") || userMsg.includes("react") || userMsg.includes("node")) {
-            score = 8;
-            feedback = "Good use of technical terminology.";
-        } else if (userMsg.includes("because") || userMsg.includes("example")) {
-            score = 7;
-            feedback = "Good reasoning provided.";
-        }
-
+        console.error("🚨 SmartMock was illegally triggered for an EVALUATION request. Aborting to prevent generic repeated feedback.");
         return {
-            score: score,
-            feedback: feedback,
+            score: 0,
+            feedback: "Evaluation failed. AI service error.",
             category: "Technical"
         };
     }
@@ -196,9 +178,24 @@ function attemptParseJSON(text) {
 async function callAI(userPrompt, systemMsg = "You are an expert technical interviewer.") {
     console.log("🚀 AI Service Called...");
 
+    // Check if this is an evaluation call
+    const isEvaluation = userPrompt.toLowerCase().includes("evaluate this answer");
+    if (isEvaluation) {
+        console.log("📝 Mode: Evaluation");
+    }
+
     // 1. Validate Key
     if (!genAI) {
-        console.warn("⚠️ No API Key found. Using Smart Mock.");
+        console.warn("⚠️ No API Key found.");
+        if (isEvaluation) {
+            console.error("❌ Evaluation Failed: No API Key. Preventing SmartMock fallback.");
+            return {
+                score: 0,
+                feedback: "Evaluation failed. AI service error.",
+                category: "Technical"
+            };
+        }
+        console.warn("Switching to Smart Mock mode.");
         return getSmartMockResponse(userPrompt);
     }
 
@@ -215,10 +212,21 @@ async function callAI(userPrompt, systemMsg = "You are an expert technical inter
             const response = await result.response;
             const text = response.text();
 
+            if (isEvaluation) {
+                console.log(`🧠 Raw AI Response from ${modelName}:\n`, text);
+            }
+
             const parsed = attemptParseJSON(text);
+            if (isEvaluation) {
+                console.log(`🔍 JSON Parsing Result for ${modelName}:`, parsed);
+            }
             if (parsed) {
                 console.log(`✅ Success with ${modelName}`);
                 return parsed;
+            } else {
+                if (isEvaluation) {
+                    console.error("❌ JSON parsing failed for response:", text);
+                }
             }
         } catch (error) {
             console.error(`❌ Failed with ${modelName}:`, error.message);
@@ -227,6 +235,15 @@ async function callAI(userPrompt, systemMsg = "You are an expert technical inter
     }
 
     // 3. Fallback to Smart Mock if ALL API attempts fail
+    if (isEvaluation) {
+        console.error("❌ All AI models failed during evaluation. Returning structured JSON instead of fallback.");
+        return {
+            score: 0,
+            feedback: "Evaluation failed. AI service error.",
+            category: "Technical"
+        };
+    }
+
     console.warn("⚠️ All AI models failed. Switching to Smart Mock mode.");
     return getSmartMockResponse(userPrompt);
 }

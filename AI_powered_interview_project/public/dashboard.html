@@ -214,10 +214,18 @@
           <h3 style="margin-bottom: 1.5rem;">Session Settings</h3>
 
           <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Interview Focus</label>
-          <select id="intMode"
-            style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
+          <select id="intMode" style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
             <option value="resume">Resume Based (Auto)</option>
             <option value="custom">Specific Topic</option>
+          </select>
+
+          <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Number of Questions</label>
+          <select id="questionCount" style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
+            <option value="5">5 Questions</option>
+            <option value="10">10 Questions</option>
+            <option value="15">15 Questions</option>
+            <option value="20">20 Questions</option>
+            <option value="25">25 Questions</option>
           </select>
 
           <div id="customSkillBox" class="hidden">
@@ -909,6 +917,8 @@
     let intTimer = null;
     let timeLeft = 60;
     let timeTakenCounter = 0;
+    let questionLimit = 5;
+    let questionsAnswered = 0;
 
     document.getElementById("intMode").onchange = function () {
       document.getElementById("customSkillBox").classList.toggle("hidden", this.value === 'resume');
@@ -941,6 +951,9 @@
     async function initSession() {
       const mode = document.getElementById("intMode").value;
       const skill = document.getElementById("customSkill").value;
+
+      questionLimit = parseInt(document.getElementById("questionCount").value) || 5;
+      questionsAnswered = 0;
 
       document.getElementById("intStatus").innerText = "• Active";
       document.getElementById("intStatus").style.color = "#D9FF00";
@@ -986,12 +999,23 @@
 
         // 1. Show Evaluation Feedback if any
         if (data.evaluation) {
+          questionsAnswered++;
           const fColor = data.evaluation.score > 7 ? "#00FF94" : "#FFB800";
           box.innerHTML += `
                <div class="feedback-card" style="border-left: 3px solid ${fColor}; background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                  <strong style="color: ${fColor}">AI Feedback (Score: ${data.evaluation.score}/10)</strong> <br>
                  <p style="font-size: 0.85rem; color: #aaa; margin-top: 0.5rem;">${data.evaluation.feedback}</p>
                </div>`;
+        }
+
+        if (questionsAnswered >= questionLimit) {
+          box.innerHTML += `<div class="msg ai">🎉 Interview Completed! You have finished ${questionLimit} questions.</div>`;
+          box.scrollTop = box.scrollHeight;
+          document.getElementById("intStatus").innerText = "• Completed";
+          document.getElementById("intStatus").style.color = "#888";
+          stopTimer();
+          loadDashboardData(); // Update Dashboard statistics
+          return;
         }
 
         // 2. Add AI reply

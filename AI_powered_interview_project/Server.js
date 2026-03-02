@@ -265,6 +265,7 @@ app.get("/user-dashboard/:email", async (req, res) => {
 
     // 2. Interview Performance Data
     // Get all attempts for this user
+
     const attempts = InterviewAttempt ? await InterviewAttempt.find({ userEmail: email }).sort({ timestamp: 1 }) : [];
 
     // --- Metrics Config ---
@@ -347,19 +348,48 @@ app.post("/interview/chat", async (req, res) => {
 
       // Strict JSON prompt for evaluation
       const evalPrompt = `
-          Evaluate this answer. 
-          User Answer: "${message}"
-          Context: ${context.mode} interview for ${user ? user.role : 'General'}. Experience: ${user ? user.experienceLevel : 'Entry'}.
-          
-          Return JSON strictly:
-          {
-            "score": number (0-10),
-            "feedback": "string (concise)",
-            "category": "Technical" | "Behavioral" | "System Design"
-          }
-        `;
+evaluate this answer
 
-      evaluation = await callAI(evalPrompt);
+Question: "${questionText}"
+
+User Answer: 
+"${message}"
+
+Instructions for deep evaluation:
+1. Semantic Analysis: Read the candidate's answer carefully. Analyze its length, technical correctness, keywords, and reasoning (because, therefore, for example).
+2. Forced Reasoning: Before scoring, formulate a short internal reasoning explaining your thoughts on the specific content of the answer.
+3. Scoring (0-10): Be realistic. Detailed correct answers with examples deserve 8-10. Short but correct answers deserve 5-7. Vague or incorrect answers deserve 0-4.
+4. Dynamic Feedback: Create completely unique feedback that references specific words or concepts from the candidate's answer.
+5. PROHIBITED: Do not return generic, hardcoded, repetitive text. Your response must change when the answer changes.
+
+Return STRICT JSON only:
+{
+  "reasoning": "brief internal analysis of the exact answer content",
+  "score": number,
+  "feedback": "unique, specific feedback citing the actual answer",
+  "category": "Technical"
+}
+`;
+
+      try {
+        console.log("➡️ Sending evaluation prompt to AI...");
+        const rawEval = await callAI(evalPrompt);
+        evaluation = {
+          score: (rawEval && typeof rawEval.score === 'number') ? rawEval.score : 5,
+          feedback: (rawEval && rawEval.feedback && !rawEval.feedback.includes("Your answer provides no detail"))
+            ? rawEval.feedback
+            : `I read your response starting with "${message.substring(0, 20)}...", but you need to elaborate with more technical details and specific examples.`,
+          category: (rawEval && rawEval.category) ? rawEval.category : "Technical"
+        };
+        console.log("✅ Evaluation completed successfully by AI.");
+      } catch (err) {
+        console.error("🚨 Evaluation Error Caught in Server.js:", err.message);
+        evaluation = {
+          score: 3,
+          feedback: `Evaluation failed for your answer. Our AI is currently unavailable or unable to parse response: "${message.substring(0, 20)}...". Please try again.`,
+          category: "Technical"
+        };
+      }
 
       // SAVE ATTEMPT
       if (evaluation && InterviewAttempt) {
@@ -384,27 +414,27 @@ app.post("/interview/chat", async (req, res) => {
         - Level: ${resumeData.level}
         - Detected Skills: ${resumeData.skills.join(", ")}
         - Summary: ${resumeData.summary || "N/A"}
-        
+
         Task: Ask a relevant technical or behavioral interview question tailored to this candidate's profile.
-        `;
+          `;
     } else {
       contextData = `
         Job Role: ${user ? user.role : (context.skill || 'Software Engineer')}
         Experience Level: ${user ? user.experienceLevel : 'Entry'}
         Topic: ${context.skill || 'General Software Engineering'}
-      `;
+        `;
     }
 
     const nextQPrompt = `
         Generate the next interview question.
-        Context: ${contextData}
+          Context: ${contextData}
         Previous Interaction:
         - User's Last Answer: "${message}"
-        - AI Feedback: ${JSON.stringify(evaluation)}
-        
+          - AI Feedback: ${JSON.stringify(evaluation)}
+
         Constraint: Keep the question concise and professional.
         Return JSON strictly: { "message": "string" }
-    `;
+        `;
     const nextQ = await callAI(nextQPrompt);
 
     // SAVE THE NEWLY GENERATED QUESTION
