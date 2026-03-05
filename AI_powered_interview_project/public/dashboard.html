@@ -12,6 +12,7 @@
 
   <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="drawer_styles.css">
@@ -196,10 +197,32 @@
 
           <div style="margin-top: 2rem; display: flex; gap: 1rem;">
             <button class="btn-primary" onclick="startInterview('resume')">Start AI Mock Interview</button>
-            <button onclick="location.reload()"
+            <button onclick="document.getElementById('fileInput').click()"
               style="background: transparent; border: 1px solid #333; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Upload
               New</button>
           </div>
+        </div>
+      </div>
+
+      <!-- RESUME HISTORY TABLE -->
+      <div id="resumeHistoryContainer"
+        style="margin-top: 3rem; background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
+        <h3 style="margin-bottom: 2rem;">Resume History</h3>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid #222; color: #888; font-size: 0.9rem;">
+                <th style="padding: 1rem;">Date</th>
+                <th style="padding: 1rem;">Filename</th>
+                <th style="padding: 1rem;">Score</th>
+                <th style="padding: 1rem;">Level</th>
+                <th style="padding: 1rem;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="resumeHistoryTableBody">
+              <!-- Rows will be injected here -->
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -214,13 +237,16 @@
           <h3 style="margin-bottom: 1.5rem;">Session Settings</h3>
 
           <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Interview Focus</label>
-          <select id="intMode" style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
+          <select id="intMode"
+            style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
             <option value="resume">Resume Based (Auto)</option>
             <option value="custom">Specific Topic</option>
           </select>
 
-          <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Number of Questions</label>
-          <select id="questionCount" style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Number of
+            Questions</label>
+          <select id="questionCount"
+            style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 1rem;">
             <option value="5">5 Questions</option>
             <option value="10">10 Questions</option>
             <option value="15">15 Questions</option>
@@ -441,9 +467,63 @@
   <script>
     const API = "http://localhost:3000";
     const email = localStorage.getItem("userEmail");
+    const jwtToken = localStorage.getItem("jwtToken");
 
     // Auth Check
     if (!email) window.location.href = "index.html";
+
+    // Custom fetch wrapper with JWT
+    const apiFetch = async (url, options = {}) => {
+      const headers = options.headers || {};
+      if (jwtToken) headers['Authorization'] = `Bearer ${jwtToken}`;
+      options.headers = headers;
+      return fetch(url, options);
+    };
+
+    // Socket Initialization
+    let socket;
+    if (typeof io !== "undefined") {
+      socket = io(API, { auth: { token: jwtToken } });
+
+      socket.on("chatResponse", (data) => {
+        handleChatResponse(data);
+      });
+
+      socket.on("chatError", (data) => {
+        showToast(data.message || "Socket error");
+      });
+    }
+
+    function handleChatResponse(data) {
+      const box = document.getElementById("chatBox");
+      // 1. Show Evaluation Feedback if any
+      if (data.evaluation) {
+        questionsAnswered++;
+        const fColor = data.evaluation.score > 7 ? "#00FF94" : "#FFB800";
+        box.innerHTML += `
+               <div class="feedback-card" style="border-left: 3px solid ${fColor}; background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                 <strong style="color: ${fColor}">AI Feedback (Score: ${data.evaluation.score}/10)</strong> <br>
+                 <p style="font-size: 0.85rem; color: #aaa; margin-top: 0.5rem;">${data.evaluation.feedback}</p>
+               </div>`;
+      }
+
+      if (questionsAnswered >= questionLimit) {
+        box.innerHTML += `<div class="msg ai">🎉 Interview Completed! You have finished ${questionLimit} questions.</div>`;
+        box.scrollTop = box.scrollHeight;
+        document.getElementById("intStatus").innerText = "• Completed";
+        document.getElementById("intStatus").style.color = "#888";
+        stopTimer();
+        loadDashboardData(); // Update Dashboard statistics
+        return;
+      }
+
+      // 2. Add AI reply
+      box.innerHTML += `<div class="msg ai">${data.reply}</div>`;
+      box.scrollTop = box.scrollHeight;
+
+      // Restart timer for next question
+      startTimer();
+    }
 
     // Initialize UI
     const storedName = localStorage.getItem("userName");
@@ -462,7 +542,7 @@
     // Fetch Profile for Initials
     async function initSidebarProfile() {
       try {
-        const res = await fetch(`${API}/user-profile/${email}`);
+        const res = await apiFetch(`${API}/user-profile/${email}`);
         const user = await res.json();
         const initialsEl = document.getElementById("avatarInitials");
         if (initialsEl && user.name) {
@@ -478,7 +558,7 @@
       const modal = document.getElementById("profileModal");
 
       try {
-        const res = await fetch(`${API}/user-profile/${email}`);
+        const res = await apiFetch(`${API}/user-profile/${email}`);
         const user = await res.json();
 
         document.getElementById("editName").value = user.name || "";
@@ -507,7 +587,7 @@
       };
 
       try {
-        const res = await fetch(`${API}/user-profile/${email}`, {
+        const res = await apiFetch(`${API}/user-profile/${email}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -566,6 +646,7 @@
 
       // 5. Load Data
       if (viewId === 'dashboard') loadDashboardData();
+      if (viewId === 'resume') loadResumeHistory();
       if (viewId === 'analytics') loadHistory();
       if (viewId === 'settings') loadSettings();
     }
@@ -605,7 +686,7 @@
       };
 
       try {
-        const res = await fetch(`${API}/user-profile/${email}`, {
+        const res = await apiFetch(`${API}/user-profile/${email}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -637,7 +718,7 @@
     // -- Dashboard Data (UPDATED: Dynamic) --
     async function loadDashboardData() {
       try {
-        const res = await fetch(`${API}/user-dashboard/${email}`);
+        const res = await apiFetch(`${API}/user-dashboard/${email}`);
         const data = await res.json();
 
         // Check if new user (no resume, no stats)
@@ -680,7 +761,7 @@
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">Loading history...</td></tr>';
 
       try {
-        const res = await fetch(`${API}/interview-history/${email}`);
+        const res = await apiFetch(`${API}/interview-history/${email}`);
         const data = await res.json();
 
         if (!data.success || data.history.length === 0) {
@@ -868,7 +949,7 @@
       formData.append("email", email);
 
       try {
-        const res = await fetch(`${API}/upload-resume`, { method: "POST", body: formData });
+        const res = await apiFetch(`${API}/upload-resume`, { method: "POST", body: formData });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.message || `Server Error (${res.status})`);
@@ -883,29 +964,97 @@
           return;
         }
 
-        // Show Results
-        document.getElementById("analysisResult").classList.remove("hidden");
-        document.getElementById("anaScore").innerText = data.analysis.score;
-        document.getElementById("anaLevel").innerText = "Level: " + data.analysis.level;
-        document.getElementById("anaSummary").innerText = data.analysis.summary;
-
-        // Render Skills Badges
-        const sBox = document.getElementById("anaSkills"); sBox.innerHTML = "";
-        data.analysis.skills.forEach(s => {
-          sBox.innerHTML += `<span class="badge badge-highlight">${s}</span>`;
-        });
-
-        // Render Suggestions
-        const lBox = document.getElementById("anaSuggestions"); lBox.innerHTML = "";
-        data.analysis.suggestions.forEach(s => {
-          lBox.innerHTML += `<li><i class="fa-solid fa-check" style="color:var(--primary); margin-right:8px;"></i>${s}</li>`;
-        });
+        renderResumeResult(data.analysis);
+        loadResumeHistory();
 
       } catch (e) {
         console.error("Upload Error Details:", e);
         showToast("Error: " + (e.message || "Server Connection Failed"));
         document.getElementById("dropZone").classList.remove("hidden");
         document.getElementById("analysisLoading").classList.add("hidden");
+      }
+    }
+
+    function renderResumeResult(analysis) {
+      document.getElementById("dropZone").classList.add("hidden");
+      document.getElementById("analysisResult").classList.remove("hidden");
+      document.getElementById("anaScore").innerText = analysis.score;
+      document.getElementById("anaLevel").innerText = "Level: " + analysis.level;
+      document.getElementById("anaSummary").innerText = analysis.summary;
+
+      // Render Skills Badges
+      const sBox = document.getElementById("anaSkills"); sBox.innerHTML = "";
+      analysis.skills.forEach(s => {
+        sBox.innerHTML += `<span class="badge badge-highlight">${s}</span>`;
+      });
+
+      // Render Suggestions
+      const lBox = document.getElementById("anaSuggestions");
+      lBox.innerHTML = "";
+
+      let additionalFeedback = "";
+
+      if (analysis.suitable_jobs && analysis.suitable_jobs.length > 0) {
+        additionalFeedback += `<li style="margin-top: 1rem;"><strong style="color:var(--primary);">Suitable Roles: </strong> ${analysis.suitable_jobs.join(', ')}</li>`;
+      }
+      if (analysis.skills_to_improve && analysis.skills_to_improve.length > 0) {
+        additionalFeedback += `<li style="margin-top: 1rem;"><strong style="color:#d9ff00;">Skills to Improve: </strong> ${analysis.skills_to_improve.join(', ')}</li>`;
+      }
+
+      analysis.suggestions.forEach(s => {
+        lBox.innerHTML += `<li><i class="fa-solid fa-check" style="color:var(--primary); margin-right:8px;"></i>${s}</li>`;
+      });
+
+      lBox.innerHTML += additionalFeedback;
+    }
+
+    async function loadResumeHistory() {
+      const tbody = document.getElementById("resumeHistoryTableBody");
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem;">Loading defaults...</td></tr>';
+
+      try {
+        const res = await apiFetch(`${API}/resume-history/${email}`);
+        const data = await res.json();
+
+        if (!data.success || data.resumes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#666;">No resumes uploaded yet.</td></tr>';
+          return;
+        }
+
+        // Keep raw analysis data in memory for easy viewing
+        window.resumeHistoryData = data.resumes;
+
+        tbody.innerHTML = data.resumes.map((r, index) => {
+          const date = new Date(r.uploadedAt).toLocaleDateString();
+          const fname = r.filename || "Resume Document";
+          const score = r.analysis?.score || 0;
+          const level = r.analysis?.level || "Unknown";
+          const scoreColor = score >= 80 ? "#D9FF00" : (score >= 50 ? "#FFB800" : "#ff4444");
+
+          return `
+            <tr style="border-bottom: 1px solid #1a1a1a; transition: background 0.2s;" onmouseover="this.style.background='#161616'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 1rem; color: #888;">${date}</td>
+              <td style="padding: 1rem; color: #ccc;">${fname}</td>
+              <td style="padding: 1rem; font-weight: 600; color: ${scoreColor}">${score}/100</td>
+              <td style="padding: 1rem; color: #888;">${level}</td>
+              <td style="padding: 1rem;">
+                <button onclick="viewHistoricalResume(${index})" style="background:var(--primary); color:#000; border:none; padding:4px 12px; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.8rem;">
+                  View
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#ff4444;">Failed to load resume history.</td></tr>';
+      }
+    }
+
+    function viewHistoricalResume(index) {
+      if (window.resumeHistoryData && window.resumeHistoryData[index]) {
+        renderResumeResult(window.resumeHistoryData[index].analysis);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
 
@@ -982,52 +1131,16 @@
 
       box.scrollTop = box.scrollHeight;
 
-      try {
-        const res = await fetch(`${API}/interview/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            message: text,
-            context: { mode, skill },
-            isFirst,
-            timeTaken: timeUsed
-          })
+      if (socket) {
+        socket.emit("chatMessage", {
+          email,
+          message: text,
+          context: { mode, skill },
+          isFirst,
+          timeTaken: timeUsed
         });
-
-        const data = await res.json();
-
-        // 1. Show Evaluation Feedback if any
-        if (data.evaluation) {
-          questionsAnswered++;
-          const fColor = data.evaluation.score > 7 ? "#00FF94" : "#FFB800";
-          box.innerHTML += `
-               <div class="feedback-card" style="border-left: 3px solid ${fColor}; background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                 <strong style="color: ${fColor}">AI Feedback (Score: ${data.evaluation.score}/10)</strong> <br>
-                 <p style="font-size: 0.85rem; color: #aaa; margin-top: 0.5rem;">${data.evaluation.feedback}</p>
-               </div>`;
-        }
-
-        if (questionsAnswered >= questionLimit) {
-          box.innerHTML += `<div class="msg ai">🎉 Interview Completed! You have finished ${questionLimit} questions.</div>`;
-          box.scrollTop = box.scrollHeight;
-          document.getElementById("intStatus").innerText = "• Completed";
-          document.getElementById("intStatus").style.color = "#888";
-          stopTimer();
-          loadDashboardData(); // Update Dashboard statistics
-          return;
-        }
-
-        // 2. Add AI reply
-        box.innerHTML += `<div class="msg ai">${data.reply}</div>`;
-        box.scrollTop = box.scrollHeight;
-
-        // Restart timer for next question
-        startTimer();
-
-      } catch (e) {
-        console.error("Chat Error", e);
-        showToast("AI response failed.");
+      } else {
+        showToast("Socket connection unavailable.");
       }
     }
 

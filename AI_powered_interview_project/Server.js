@@ -3,13 +3,19 @@ require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const http = require("http");
 
 // Optional Dependencies with Safe Loading
-let cors, bcrypt, mongoose, multer;
+let cors, bcrypt, mongoose, multer, jwt, socketIo, nodemailer;
 try { cors = require("cors"); } catch (e) { console.warn("⚠️ cors missing, using default."); }
 try { bcrypt = require("bcrypt"); } catch (e) { console.warn("⚠️ bcrypt missing, auth disabled."); }
 try { mongoose = require("mongoose"); } catch (e) { console.warn("⚠️ mongoose missing, DB features disabled."); }
 try { multer = require("multer"); } catch (e) { console.warn("⚠️ multer missing, file uploads disabled."); }
+try { jwt = require("jsonwebtoken"); } catch (e) { console.warn("⚠️ jsonwebtoken missing, JWT auth disabled."); }
+try { socketIo = require("socket.io"); } catch (e) { console.warn("⚠️ socket.io missing, websockets disabled."); }
+try { nodemailer = require("nodemailer"); } catch (e) { console.warn("⚠️ nodemailer missing, email features disabled."); }
+
+const crypto = require("crypto");
 
 // Local Modules
 const { extractResumeText } = require('./resumeParser');
@@ -17,6 +23,11 @@ const aiService = require('./aiService');
 const callAI = aiService.callAI ? aiService.callAI : async () => ({ error: "AI Service Unavailable" });
 
 const app = express();
+const server = http.createServer(app);
+let io;
+if (socketIo) {
+  io = socketIo(server, { cors: { origin: "*" } });
+}
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -54,11 +65,14 @@ if (mongoose) {
     portfolio: { type: String, default: "" },
     phone: { type: String, default: "" },
     avatar: { type: String, default: "male1" }, // identifier for chosen avatar
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     createdAt: { type: Date, default: Date.now }
   });
 
   const resumeSchema = new mongoose.Schema({
     userEmail: String,
+    filename: String,
     extractedText: String,
     analysis: {
       score: Number,
@@ -66,7 +80,9 @@ if (mongoose) {
       level: String,
       summary: String,
       suggestions: [String],
-      questions: [String]
+      questions: [String],
+      suitable_jobs: [String],
+      skills_to_improve: [String]
     },
     uploadedAt: { type: Date, default: Date.now }
   });
@@ -100,6 +116,19 @@ if (mongoose) {
 }
 
 /* ================= ROUTES ================= */
+
+// Middleware for JWT Verification
+const verifyToken = (req, res, next) => {
+  if (!jwt) return next();
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(403).json({ message: "Token required" });
+  jwt.verify(token, process.env.JWT_SECRET || "supersecretjwtkey", (err, decoded) => {
+    if (err) return res.status(401).json({ message: "Invalid token" });
+    req.user = decoded;
+    next();
+  });
+};
 
 // Auth Routes
 if (User && bcrypt) {
@@ -153,8 +182,13 @@ if (User && bcrypt) {
     try {
       const user = await User.findOne({ email });
       if (user && await bcrypt.compare(password, user.password)) {
+        let token = null;
+        if (jwt) {
+          token = jwt.sign({ email: user.email, id: user._id }, process.env.JWT_SECRET || "supersecretjwtkey", { expiresIn: '24h' });
+        }
         res.json({
           success: true,
+          token: token,
           user: { name: user.name, email: user.email, role: user.role, experienceLevel: user.experienceLevel, avatar: user.avatar }
         });
       } else {
@@ -163,8 +197,101 @@ if (User && bcrypt) {
     } catch (e) { res.status(500).json({ message: "Login error" }); }
   });
 
+  /* --- PASSWORD RESET --- */
+  app.post("/forgot-password", async (req, res) => {
+    const { email } = req.body;
+    try {
+      const user = await User.findOne({ email });
+      if (!user) {
+        // We still return true to avoid email enumeration attacks
+        return res.json({ success: true, message: "If an account with that email exists, a password reset link has been sent." });
+      }
+
+      // Generate token
+      const token = crypto.randomBytes(32).toString('hex');
+      user.resetPasswordToken = token;
+      user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+      await user.save();
+
+      // Send Email
+      let transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || "smtp.ethereal.email",
+        port: process.env.EMAIL_PORT || 587,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      // If no env config, use Ethereal for testing automatically
+      if (!process.env.EMAIL_USER) {
+        let testAccount = await nodemailer.createTestAccount();
+        transporter = nodemailer.createTransport({
+          host: "smtp.ethereal.email",
+          port: 587,
+          secure: false, // true for 465, false for other ports
+          auth: {
+            user: testAccount.user, // generated ethereal user
+            pass: testAccount.pass, // generated ethereal password
+          },
+        });
+      }
+
+      const resetUrl = `http://localhost:3000/reset-password.html?token=${token}`;
+
+      let info = await transporter.sendMail({
+        from: '"InterviewCoach" <noreply@interviewcoach.com>',
+        to: user.email,
+        subject: "Password Reset Request",
+        text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+          Please click on the following link, or paste this into your browser to complete the process:\n\n
+          ${resetUrl}\n\n
+          If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+        html: `<p>You requested a password reset</p><p>Click this <a href="${resetUrl}">link</a> to set a new password.</p>`
+      });
+
+      console.log("Password reset email sent: %s", info.messageId);
+      // Log URL to terminal for easy testing with Ethereal
+      if (nodemailer.getTestMessageUrl(info)) {
+        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      }
+
+      res.json({ success: true, message: "If an account with that email exists, a password reset link has been sent." });
+
+    } catch (e) {
+      console.error("Forgot Password Error:", e);
+      res.status(500).json({ success: false, message: "Error processing request" });
+    }
+  });
+
+  app.post("/reset-password", async (req, res) => {
+    const { token, newPassword } = req.body;
+    try {
+      const user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        return res.status(400).json({ success: false, message: "Password reset token is invalid or has expired." });
+      }
+
+      // Hash new password
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+
+      res.json({ success: true, message: "Your password has been changed successfully. You can now log in." });
+
+    } catch (e) {
+      console.error("Reset Password Error:", e);
+      res.status(500).json({ success: false, message: "Error resetting password." });
+    }
+  });
+
   /* --- USER PROFILE MANAGEMENT --- */
-  app.get("/user-profile/:email", async (req, res) => {
+  app.get("/user-profile/:email", verifyToken, async (req, res) => {
     try {
       const user = await User.findOne({ email: req.params.email }, "-password");
       if (!user) return res.status(404).json({ message: "User not found" });
@@ -172,7 +299,7 @@ if (User && bcrypt) {
     } catch (e) { res.status(500).json({ message: "Error fetching profile" }); }
   });
 
-  app.put("/user-profile/:email", async (req, res) => {
+  app.put("/user-profile/:email", verifyToken, async (req, res) => {
     try {
       const { name, role, experienceLevel, github, linkedin, portfolio, phone } = req.body;
       const user = await User.findOneAndUpdate(
@@ -193,7 +320,7 @@ if (User && bcrypt) {
 if (multer) {
   const upload = multer({ dest: "uploads/", limits: { fileSize: 10 * 1024 * 1024 } });
 
-  app.post("/upload-resume", upload.single("resume"), async (req, res) => {
+  app.post("/upload-resume", verifyToken, upload.single("resume"), async (req, res) => {
     try {
       const { email } = req.body;
       const file = req.file;
@@ -207,9 +334,11 @@ if (multer) {
       Task:
       1. Extract a concise executive summary (3-4 sentences max).
       2. Identify the candidate's experience level (Entry, Mid, Senior, Lead).
-      3. List exactly 5-8 key technical skills (e.g., Python, React, AWS).
+      3. List exactly 5-8 key technical skills.
       4. Suggest 3 specific interview questions related to their projects or skills.
       5. Calculate a match score (0-100) for a general Software Engineer role.
+      6. Provide a list of suitable jobs based on the content.
+      7. Provide a list of skills they need to improve.
 
       RESUME CONTENT:
       ${text.substring(0, 4000)}
@@ -221,7 +350,9 @@ if (multer) {
         "skills": ["string", "string"],
         "questions": ["string", "string"],
         "score": number, 
-        "suggestions": ["string", "string"]
+        "suggestions": ["string", "string"],
+        "suitable_jobs": ["string", "string"],
+        "skills_to_improve": ["string", "string"]
       }`;
 
       const analysisRaw = await callAI(prompt, "System: Expert Technical Recruiter");
@@ -233,18 +364,18 @@ if (multer) {
         level: analysisRaw.level || "Unknown",
         summary: analysisRaw.summary || "Candidate profile analysis unavailable.",
         suggestions: Array.isArray(analysisRaw.suggestions) ? analysisRaw.suggestions : [],
-        questions: Array.isArray(analysisRaw.questions) ? analysisRaw.questions : []
+        questions: Array.isArray(analysisRaw.questions) ? analysisRaw.questions : [],
+        suitable_jobs: Array.isArray(analysisRaw.suitable_jobs) ? analysisRaw.suitable_jobs : [],
+        skills_to_improve: Array.isArray(analysisRaw.skills_to_improve) ? analysisRaw.skills_to_improve : []
       };
 
       if (Resume && email) {
-        await Resume.findOneAndUpdate(
-          { userEmail: email },
-          {
-            extractedText: text,
-            analysis: analysis
-          },
-          { upsert: true }
-        );
+        await new Resume({
+          userEmail: email,
+          filename: file.originalname,
+          extractedText: text,
+          analysis: analysis
+        }).save();
       }
 
       res.json({ success: true, analysis });
@@ -256,12 +387,13 @@ if (multer) {
 }
 
 /* --- DYNAMIC DASHBOARD ANALYTICS --- */
-app.get("/user-dashboard/:email", async (req, res) => {
+app.get("/user-dashboard/:email", verifyToken, async (req, res) => {
   try {
     const { email } = req.params;
 
     // 1. Resume Data
-    const resumeDoc = Resume ? await Resume.findOne({ userEmail: email }) : null;
+    const resumeDocs = Resume ? await Resume.find({ userEmail: email }).sort({ uploadedAt: -1 }) : [];
+    const latestResumeDoc = resumeDocs.length > 0 ? resumeDocs[0] : null;
 
     // 2. Interview Performance Data
     // Get all attempts for this user
@@ -300,7 +432,7 @@ app.get("/user-dashboard/:email", async (req, res) => {
     const trendData = recentAttempts.map(a => a.score);
 
     res.json({
-      resume: resumeDoc ? resumeDoc.analysis : null,
+      resume: latestResumeDoc ? latestResumeDoc.analysis : null,
       stats: {
         totalQuestions,
         avgScore,
@@ -319,7 +451,7 @@ app.get("/user-dashboard/:email", async (req, res) => {
   }
 });
 
-app.get("/interview-history/:email", async (req, res) => {
+app.get("/interview-history/:email", verifyToken, async (req, res) => {
   try {
     const { email } = req.params;
     const history = InterviewAttempt ? await InterviewAttempt.find({ userEmail: email }).sort({ timestamp: -1 }) : [];
@@ -327,27 +459,50 @@ app.get("/interview-history/:email", async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-/* --- INTERVIEW CHAT (Saving Attempts) --- */
-app.post("/interview/chat", async (req, res) => {
-  const { email, message, context, isFirst, timeTaken } = req.body;
-
+app.get("/resume-history/:email", verifyToken, async (req, res) => {
   try {
-    let user = User ? await User.findOne({ email }) : null;
-    let resumeData = null;
-    if (context.mode === 'resume' && Resume) {
-      const resume = await Resume.findOne({ userEmail: email });
-      resumeData = resume ? resume.analysis : null;
-    }
+    const { email } = req.params;
+    const resumes = Resume ? await Resume.find({ userEmail: email }).sort({ uploadedAt: -1 }) : [];
+    res.json({ success: true, resumes });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
 
-    // 1. Evaluate User Answer
-    let evaluation = null;
-    if (!isFirst) {
-      // Get the last generated question for this user to store it in the attempt
-      const lastQ = GeneratedQuestion ? await GeneratedQuestion.findOne({ userEmail: email }).sort({ timestamp: -1 }) : null;
-      const questionText = lastQ ? lastQ.questionText : "Interview Question";
+/* --- INTERVIEW CHAT (Saving Attempts via WebSockets) --- */
+if (io) {
+  io.use((socket, next) => {
+    if (!jwt) return next();
+    const token = socket.handshake.auth.token;
+    if (!token) return next(new Error("Authentication error"));
+    jwt.verify(token, process.env.JWT_SECRET || "supersecretjwtkey", (err, decoded) => {
+      if (err) return next(new Error("Authentication error"));
+      socket.user = decoded;
+      next();
+    });
+  });
 
-      // Strict JSON prompt for evaluation
-      const evalPrompt = `
+  io.on("connection", (socket) => {
+    console.log("🟢 WebSocket Connected:", socket.id);
+
+    socket.on("chatMessage", async (data) => {
+      const { email, message, context, isFirst, timeTaken } = data;
+
+      try {
+        let user = User ? await User.findOne({ email }) : null;
+        let resumeData = null;
+        if (context.mode === 'resume' && Resume) {
+          const resume = await Resume.findOne({ userEmail: email });
+          resumeData = resume ? resume.analysis : null;
+        }
+
+        // 1. Evaluate User Answer
+        let evaluation = null;
+        if (!isFirst) {
+          // Get the last generated question for this user to store it in the attempt
+          const lastQ = GeneratedQuestion ? await GeneratedQuestion.findOne({ userEmail: email }).sort({ timestamp: -1 }) : null;
+          const questionText = lastQ ? lastQ.questionText : "Interview Question";
+
+          // Strict JSON prompt for evaluation
+          const evalPrompt = `
 evaluate this answer
 
 Question: "${questionText}"
@@ -371,92 +526,98 @@ Return STRICT JSON only:
 }
 `;
 
-      try {
-        console.log("➡️ Sending evaluation prompt to AI...");
-        const rawEval = await callAI(evalPrompt);
-        evaluation = {
-          score: (rawEval && typeof rawEval.score === 'number') ? rawEval.score : 5,
-          feedback: (rawEval && rawEval.feedback && !rawEval.feedback.includes("Your answer provides no detail"))
-            ? rawEval.feedback
-            : `I read your response starting with "${message.substring(0, 20)}...", but you need to elaborate with more technical details and specific examples.`,
-          category: (rawEval && rawEval.category) ? rawEval.category : "Technical"
-        };
-        console.log("✅ Evaluation completed successfully by AI.");
-      } catch (err) {
-        console.error("🚨 Evaluation Error Caught in Server.js:", err.message);
-        evaluation = {
-          score: 3,
-          feedback: `Evaluation failed for your answer. Our AI is currently unavailable or unable to parse response: "${message.substring(0, 20)}...". Please try again.`,
-          category: "Technical"
-        };
+          try {
+            console.log("➡️ Sending evaluation prompt to AI...");
+            const rawEval = await callAI(evalPrompt);
+            evaluation = {
+              score: (rawEval && typeof rawEval.score === 'number') ? rawEval.score : 5,
+              feedback: (rawEval && rawEval.feedback && !rawEval.feedback.includes("Your answer provides no detail"))
+                ? rawEval.feedback
+                : `I read your response starting with "${message.substring(0, 20)}...", but you need to elaborate with more technical details and specific examples.`,
+              category: (rawEval && rawEval.category) ? rawEval.category : "Technical"
+            };
+            console.log("✅ Evaluation completed successfully by AI.");
+          } catch (err) {
+            console.error("🚨 Evaluation Error Caught in Server.js:", err.message);
+            evaluation = {
+              score: 3,
+              feedback: `Evaluation failed for your answer. Our AI is currently unavailable or unable to parse response: "${message.substring(0, 20)}...". Please try again.`,
+              category: "Technical"
+            };
+          }
+
+          // SAVE ATTEMPT
+          if (evaluation && InterviewAttempt) {
+            await new InterviewAttempt({
+              userEmail: email,
+              question: questionText,
+              userAnswer: message,
+              aiFeedback: evaluation.feedback,
+              score: evaluation.score,
+              timeTaken: timeTaken || 0,
+              category: evaluation.category || "Technical",
+              sessionMode: context.mode
+            }).save();
+          }
+        }
+
+        // 2. Generate Next Question
+        let contextData = "";
+        if (context.mode === 'resume' && resumeData) {
+          contextData = `
+            Candidate Resume Analysis:
+            - Level: ${resumeData.level}
+            - Detected Skills: ${resumeData.skills.join(", ")}
+            - Summary: ${resumeData.summary || "N/A"}
+
+            Task: Ask a relevant technical or behavioral interview question tailored to this candidate's profile.
+              `;
+        } else {
+          contextData = `
+            Job Role: ${user ? user.role : (context.skill || 'Software Engineer')}
+            Experience Level: ${user ? user.experienceLevel : 'Entry'}
+            Topic: ${context.skill || 'General Software Engineering'}
+            `;
+        }
+
+        const nextQPrompt = `
+            Generate the next interview question.
+              Context: ${contextData}
+            Previous Interaction:
+            - User's Last Answer: "${message}"
+              - AI Feedback: ${JSON.stringify(evaluation)}
+
+            Constraint: Keep the question concise and professional.
+            Return JSON strictly: { "message": "string" }
+            `;
+        const nextQ = await callAI(nextQPrompt);
+
+        // SAVE THE NEWLY GENERATED QUESTION
+        if (nextQ && nextQ.message && GeneratedQuestion) {
+          await new GeneratedQuestion({
+            userEmail: email,
+            questionText: nextQ.message,
+            category: evaluation ? evaluation.category : "Technical",
+            sessionMode: context.mode
+          }).save();
+        }
+
+        socket.emit("chatResponse", {
+          reply: nextQ.message,
+          evaluation
+        });
+
+      } catch (error) {
+        console.error("Chat Error:", error);
+        socket.emit("chatError", { message: "Chat Logic Failed" });
       }
-
-      // SAVE ATTEMPT
-      if (evaluation && InterviewAttempt) {
-        await new InterviewAttempt({
-          userEmail: email,
-          question: questionText,
-          userAnswer: message,
-          aiFeedback: evaluation.feedback,
-          score: evaluation.score,
-          timeTaken: timeTaken || 0,
-          category: evaluation.category || "Technical",
-          sessionMode: context.mode
-        }).save();
-      }
-    }
-
-    // 2. Generate Next Question
-    let contextData = "";
-    if (context.mode === 'resume' && resumeData) {
-      contextData = `
-        Candidate Resume Analysis:
-        - Level: ${resumeData.level}
-        - Detected Skills: ${resumeData.skills.join(", ")}
-        - Summary: ${resumeData.summary || "N/A"}
-
-        Task: Ask a relevant technical or behavioral interview question tailored to this candidate's profile.
-          `;
-    } else {
-      contextData = `
-        Job Role: ${user ? user.role : (context.skill || 'Software Engineer')}
-        Experience Level: ${user ? user.experienceLevel : 'Entry'}
-        Topic: ${context.skill || 'General Software Engineering'}
-        `;
-    }
-
-    const nextQPrompt = `
-        Generate the next interview question.
-          Context: ${contextData}
-        Previous Interaction:
-        - User's Last Answer: "${message}"
-          - AI Feedback: ${JSON.stringify(evaluation)}
-
-        Constraint: Keep the question concise and professional.
-        Return JSON strictly: { "message": "string" }
-        `;
-    const nextQ = await callAI(nextQPrompt);
-
-    // SAVE THE NEWLY GENERATED QUESTION
-    if (nextQ && nextQ.message && GeneratedQuestion) {
-      await new GeneratedQuestion({
-        userEmail: email,
-        questionText: nextQ.message,
-        category: evaluation ? evaluation.category : "Technical",
-        sessionMode: context.mode
-      }).save();
-    }
-
-    res.json({
-      reply: nextQ.message,
-      evaluation
     });
 
-  } catch (error) {
-    console.error("Chat Error:", error);
-    res.status(500).json({ message: "Chat Logic Failed" });
-  }
-});
+    socket.on("disconnect", () => {
+      console.log("🔴 WebSocket Disconnected:", socket.id);
+    });
+  });
+}
 
 // Start Server
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));

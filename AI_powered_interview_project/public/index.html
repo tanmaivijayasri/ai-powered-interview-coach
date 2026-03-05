@@ -51,14 +51,16 @@
 
           <div class="input-group">
             <label class="input-label">Email Address</label>
-            <input type="email" id="loginEmail" placeholder="name@company.com">
+            <input type="email" id="loginEmail" placeholder="name@company.com"
+              onkeydown="if(event.key === 'Enter') handleLogin()">
             <span class="error-message" id="loginEmailError"></span>
           </div>
 
           <div class="input-group">
             <label class="input-label">Password</label>
             <div class="password-wrapper">
-              <input type="password" id="loginPassword" placeholder="••••••••">
+              <input type="password" id="loginPassword" placeholder="••••••••"
+                onkeydown="if(event.key === 'Enter') handleLogin()">
               <i class="fa-regular fa-eye eye-icon" onclick="togglePass('loginPassword', this)"></i>
             </div>
             <span class="error-message" id="loginPasswordError"></span>
@@ -209,6 +211,9 @@
         if (res.ok) {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("userEmail", email);
+          if (data.token) {
+            localStorage.setItem("jwtToken", data.token);
+          }
           if (data.user) {
             localStorage.setItem("userName", data.user.name);
             localStorage.setItem("userRole", data.user.role);
@@ -262,13 +267,27 @@
       }
     }
 
-    function handleForgot() {
+    async function handleForgot() {
       const email = document.getElementById("forgotEmail").value;
       if (!email) return showErr("forgotEmailError", "Please enter your email");
 
-      // Mock functionality since no backend endpoint exists yet
-      alert(`Password reset link sent to ${email} (System Mock)`);
-      showLogin();
+      try {
+        const res = await fetch(`${API_URL}/forgot-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert(data.message);
+          showLogin();
+        } else {
+          showErr("forgotEmailError", data.message || "Failed to send reset link");
+        }
+      } catch (e) {
+        showErr("forgotEmailError", "An error occurred. Please try again.");
+      }
     }
 
     function showErr(id, msg) {
