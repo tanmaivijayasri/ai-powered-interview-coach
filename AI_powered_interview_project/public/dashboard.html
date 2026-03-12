@@ -1082,38 +1082,47 @@
       document.getElementById("countdownBox").classList.add("hidden");
     }
 
-    async function initSession() {
+    
+
+ async function initSession(){
 
   const count = document.getElementById("questionCount").value;
 
   const res = await fetch(`${API}/generate-questions?count=${count}&email=${email}`);
-  const questions = await res.json();
+  const data = await res.json();
+
+  const questions = data.questions || data;
 
   const container = document.getElementById("questionsContainer");
-
   container.innerHTML = "";
 
   questions.forEach((q,index)=>{
+
     container.innerHTML += `
-    <div style="margin-bottom:20px">
-      
-    <p><b>Question ${index+1}:</b> ${q}</p>
-    <textarea id="answer_${index}" rows="3" style="width:100%;margin-top:8px"></textarea>
-    <br>
-    <button onclick="startSpeech(${index})" 
-   
+    <div style="margin-bottom:20px;background:#111;padding:15px;border-radius:10px">
+
+      <p><b>Question ${index+1}:</b> ${q}</p>
+
+      <textarea id="answer_${index}" rows="3"
+      style="width:100%;margin-top:8px;background:#000;color:white;border:1px solid #333;border-radius:6px;padding:8px"></textarea>
+
+      <br>
+
+      <button onclick="startSpeech(${index})"
       style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
+      
+      </button>
 
-    </button>
-
-  </div>
-
-  `;
+    </div>
+    `;
 
   });
 
+
 }
-async function submitAllAnswers(){
+
+
+ async function submitAllAnswers(){
 
   const answers = [];
 
@@ -1126,7 +1135,10 @@ async function submitAllAnswers(){
     headers:{
       "Content-Type":"application/json"
     },
-    body:JSON.stringify({answers})
+    body:JSON.stringify({
+      email:email,
+      answers:answers
+    })
   });
 
   const data = await res.json();
