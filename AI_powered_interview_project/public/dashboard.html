@@ -1086,7 +1086,7 @@
 
   const count = document.getElementById("questionCount").value;
 
-  const res = await fetch(`${API}/generate-questions?count=${count}`);
+  const res = await fetch(`${API}/generate-questions?count=${count}&email=${email}`);
   const questions = await res.json();
 
   const container = document.getElementById("questionsContainer");
@@ -1101,7 +1101,8 @@
     <textarea id="answer_${index}" rows="3" style="width:100%;margin-top:8px"></textarea>
     <br>
     <button onclick="startSpeech(${index})" 
-    style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
+   
+      style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
 
     </button>
 
