@@ -196,7 +196,7 @@
           <ul id="anaSuggestions" style="list-style: none; margin-top: 1rem; color: #888;"></ul>
 
           <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-            <button class="btn-primary" onclick="startInterview('resume')">Start AI Mock Interview</button>
+            <button class="btn-primary" onclick=" ('resume')">Start AI Mock Interview</button>
             <button onclick="document.getElementById('fileInput').click()"
               style="background: transparent; border: 1px solid #333; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Upload
               New</button>
@@ -450,6 +450,7 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
+    
     const API = "http://localhost:3000";
     const email = localStorage.getItem("userEmail");
     const jwtToken = localStorage.getItem("jwtToken");
@@ -1084,43 +1085,51 @@
 
     
 
- async function initSession(){
 
-  const count = document.getElementById("questionCount").value;
 
-  const res = await fetch(`${API}/generate-questions?count=${count}&email=${email}`);
-  const data = await res.json();
+  async function initSession(){
 
-  const questions = data.questions || data;
+  try{
 
-  const container = document.getElementById("questionsContainer");
-  container.innerHTML = "";
+    const count = document.getElementById("questionCount").value;
 
-  questions.forEach((q,index)=>{
+    const res = await fetch(`${API}/generate-questions?count=${count}&email=${email}`);
 
-    container.innerHTML += `
-    <div style="margin-bottom:20px;background:#111;padding:15px;border-radius:10px">
+    const data = await res.json();
 
-      <p><b>Question ${index+1}:</b> ${q}</p>
+    const questions = data.questions;
 
-      <textarea id="answer_${index}" rows="3"
-      style="width:100%;margin-top:8px;background:#000;color:white;border:1px solid #333;border-radius:6px;padding:8px"></textarea>
+    const container = document.getElementById("questionsContainer");
+    container.innerHTML = "";
 
-      <br>
+    questions.forEach((q,index)=>{
 
-      <button onclick="startSpeech(${index})"
-      style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
-      🎤 Speak
-      </button>
+      container.innerHTML += `
+      <div style="margin-bottom:20px;background:#111;padding:15px;border-radius:10px">
 
-    </div>
-    `;
+        <p><b>Question ${index+1}:</b> ${q}</p>
 
-  });
+        <textarea id="answer_${index}" rows="3"
+        style="width:100%;margin-top:8px;background:#000;color:white;border:1px solid #333;border-radius:6px;padding:8px"></textarea>
 
+        <br>
+
+        <button onclick="startSpeech(${index})"
+        style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
+        🎤 Speak
+        </button>
+
+      </div>
+      `;
+
+    });
+
+  }catch(err){
+    console.log(err);
+    alert("Error loading questions");
+  }
 
 }
-
 
  async function submitAllAnswers(){
 
@@ -1212,6 +1221,63 @@
   }
 
   </script>
+  <script>
+
+let socket;
+
+function startInterview() {
+
+  const email = localStorage.getItem("email");
+
+  socket = io();
+
+  socket.on("connect", () => {
+
+    console.log("Connected to server");
+
+    socket.emit("chatMessage", {
+      email: email,
+      message: "start",
+      context: { mode: "general" },
+      isFirst: true
+    });
+
+  });
+
+  socket.on("chatResponse", (data) => {
+
+    const container = document.getElementById("interviewArea");
+
+    container.innerHTML = `
+      <h3>Interview Question</h3>
+      <p>${data.reply}</p>
+
+      <textarea id="answerBox" rows="4" style="width:100%"></textarea>
+
+      <button onclick="submitAnswer()">Submit Answer</button>
+    `;
+
+  });
+
+}
+
+function submitAnswer(){
+
+  const answer = document.getElementById("answerBox").value;
+  const email = localStorage.getItem("email");
+
+  socket.emit("chatMessage", {
+    email: email,
+    message: answer,
+    context: { mode: "general" },
+    isFirst: false,
+    timeTaken: 10
+  });
+
+}
+
+</script>
+  <script src="/socket.io/socket.io.js"></script>
 </body>
 
 </html>
