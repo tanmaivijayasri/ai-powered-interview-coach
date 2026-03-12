@@ -264,17 +264,32 @@
         </div>
 
         <!-- Chat Area -->
-        <div class="interview-container">
+        <div class="chat-wrapper">
+          <div class="chat-header"
+            style="padding: 1rem 2rem; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-weight: 600;">AI Interviewer</span>
+              <span id="intStatus" style="font-size: 0.8rem; color: #666; margin-left: 0.5rem;">• Idle</span>
+            </div>
+            <div id="countdownBox" class="hidden"
+              style="background: rgba(217, 255, 0, 0.1); padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid #D9FF00;">
+              <span style="color: #D9FF00; font-size: 0.9rem; font-weight: 600;">⏱ <span
+                  id="timerText">60</span>s</span>
+            </div>
+          </div>
 
-        <h2>Mock Interview</h2>
+          <div id="chatBox" class="chat-history">
+            <div class="msg ai">
+              Select your settings on the left and click "Start Session" to begin practicing! 🚀
+            </div>
+          </div>
 
-        <div id="questionsContainer"></div>
-
-        <button onclick="submitAllAnswers()" class="btn-primary">
-        Submit Interview
-        </button>
-
-      </div>
+          <div class="chat-input-bar">
+            <textarea id="userInput" class="chat-input" placeholder="Type your answer here..." rows="1"
+              onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
+            <button class="send-btn" onclick="sendMsg()"><i class="fa-regular fa-paper-plane"></i></button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1083,57 +1098,18 @@
     }
 
     async function initSession() {
+      const mode = document.getElementById("intMode").value;
+      const skill = document.getElementById("customSkill").value;
 
-  const count = document.getElementById("questionCount").value;
+      questionLimit = parseInt(document.getElementById("questionCount").value) || 5;
+      questionsAnswered = 0;
 
-  const res = await fetch(`${API}/generate-questions?count=${count}&email=${email}`);
-  const questions = await res.json();
+      document.getElementById("intStatus").innerText = "• Active";
+      document.getElementById("intStatus").style.color = "#D9FF00";
+      document.getElementById("chatBox").innerHTML = `<div class="msg ai">Starting ${mode} interview...</div>`;
 
-  const container = document.getElementById("questionsContainer");
-
-  container.innerHTML = "";
-
-  questions.forEach((q,index)=>{
-    container.innerHTML += `
-    <div style="margin-bottom:20px">
-      
-    <p><b>Question ${index+1}:</b> ${q}</p>
-    <textarea id="answer_${index}" rows="3" style="width:100%;margin-top:8px"></textarea>
-    <br>
-    <button onclick="startSpeech(${index})" 
-   
-      style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
-
-    </button>
-
-  </div>
-
-  `;
-
-  });
-
-}
-async function submitAllAnswers(){
-
-  const answers = [];
-
-  document.querySelectorAll("textarea").forEach(a=>{
-    answers.push(a.value);
-  });
-
-  const res = await fetch(`${API}/submit-answers`,{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({answers})
-  });
-
-  const data = await res.json();
-
-  alert("Interview Completed! Score: "+data.score);
-
-}
+      await sendMsg("Let's start the interview.", true);
+    }
 
     async function sendMsg(overrideText = null, isFirst = false, isTimeout = false) {
       const input = document.getElementById("userInput");
@@ -1170,34 +1146,6 @@ async function submitAllAnswers(){
 
     // Init Page
     loadDashboardData();
-    function startSpeech(index){
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if(!SpeechRecognition){
-        alert("Speech Recognition not supported in this browser");
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-
-      recognition.lang = "en-US";
-
-      recognition.start();
-
-      recognition.onresult = function(event){
-
-      const transcript = event.results[0][0].transcript;
-
-      document.getElementById("answer_"+index).value += transcript;
-
-    };
-
-    recognition.onerror = function(event){
-    console.log(event.error);
-    };
-
-  }
 
   </script>
 </body>
