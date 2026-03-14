@@ -221,7 +221,7 @@
 
     /* --- Actions --- */
     async function handleLogin() {
-      const email = document.getElementById("loginIdentifier").value.trim();
+      const email = document.getElementById("loginIdentifier").value.trim(); // variable is still called email, but it holds either email or username
       const password = document.getElementById("loginPassword").value;
 
       // Basic Validation
@@ -238,10 +238,12 @@
 
         if (res.ok) {
           localStorage.setItem("isLoggedIn", "true");
+          
           if (data.token) {
             localStorage.setItem("jwtToken", data.token);
           }
           if (data.user) {
+            // CRITICAL: Save the actual email returned from DB, not the raw input identifier
             localStorage.setItem("userEmail", data.user.email);
             localStorage.setItem("userName", data.user.name);
             localStorage.setItem("userRole", data.user.role);
@@ -249,7 +251,7 @@
           }
           window.location.href = "dashboard.html";
         } else {
-          if (data.message && data.message.includes('unavailable')) {
+          if (data.message.includes('unavailable')) {
             // Demo Fallback
             alert("Backend unavailable. Demo Mode Active.");
             localStorage.setItem("userEmail", email || "demo@user.com");

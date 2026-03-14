@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // --- Configuration ---
 // Priority: 1. Hardcoded (User Provided) 2. Env Variable
-const USER_PROVIDED_KEY = "AIzaSyC8RAD9nXCz-4EeQJ365d2u4Jt-t1rjTTk";
+const USER_PROVIDED_KEY = "";
 const apiKey = USER_PROVIDED_KEY || process.env.GOOGLEGEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
@@ -201,6 +201,55 @@ function getSmartMockResponse(prompt) {
             feedback: "Moving to next topic.",
             score: 0
         };
+    }
+
+    // --- MODE: GENERATE MULTIPLE QUESTIONS (Dashboard) ---
+    if (p.includes("generate 5 distinct")) {
+        const roleMatch = prompt.match(/Target Role:\s*(.*)/i);
+        const role = roleMatch ? roleMatch[1].trim() : "this role";
+        const roleLower = role.toLowerCase();
+
+        if (roleLower.includes("frontend") || roleLower.includes("react") || roleLower.includes("ui")) {
+            return {
+                questions: [
+                    "Can you explain the difference between the Virtual DOM and the real DOM?",
+                    "How do you manage state in a large-scale frontend application?",
+                    "Describe a time you had to optimize the performance of a web page.",
+                    "What are your favorite CSS features for building responsive layouts?",
+                    "How do you handle accessibility (a11y) when building UI components?"
+                ]
+            };
+        } else if (roleLower.includes("backend") || roleLower.includes("node") || roleLower.includes("java")) {
+            return {
+                questions: [
+                    "Explain the concept of asynchronous programming and how it applies to backend services.",
+                    "How do you secure a REST API against common vulnerabilities?",
+                    "Describe your experience with database indexing and query optimization.",
+                    "What strategies do you use for caching backend responses?",
+                    "Tell me about a time you had to design or scale a microservice architecture."
+                ]
+            };
+        } else if (roleLower.includes("data") || roleLower.includes("machine learning") || roleLower.includes("python")) {
+            return {
+                questions: [
+                    "Can you explain the difference between supervised and unsupervised learning?",
+                    "How do you handle missing or corrupted data in a dataset?",
+                    "Describe a machine learning model or data pipeline you built recently.",
+                    "What metrics do you use to evaluate your queries or models?",
+                    "How do you optimize data processing workflows for large datasets?"
+                ]
+            };
+        } else {
+            return {
+                questions: [
+                    `Can you explain your experience and how it aligns with the ${role} position?`,
+                    `Describe a challenging technical problem you solved recently related to this field.`,
+                    `How do you ensure quality and maintainability in your work?`,
+                    `Tell me about a time you had to learn a new concept or tool quickly.`,
+                    `How do you handle technical disagreements within a team?`
+                ]
+            };
+        }
     }
 
     // --- MODE 3: DIRECT CHAT / FALLBACK ---

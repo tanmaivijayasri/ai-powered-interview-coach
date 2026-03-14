@@ -84,6 +84,7 @@ body {
   font-weight: 700;
   background: linear-gradient(to right, white, #888);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -363,6 +364,32 @@ canvas {
   font-size: 1.2rem;
 }
 
+.mic-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: #64748b;
+  transition: var(--transition);
+  margin-right: 0.5rem;
+}
+
+.mic-btn:hover {
+  border-color: var(--primary);
+  color: white;
+}
+
+.mic-btn.active-mic {
+  background: rgba(217, 255, 0, 0.2);
+  color: var(--primary);
+  border-color: var(--primary);
+  animation: pulseMic 1.5s infinite;
+}
+
+@keyframes pulseMic {
+  0% { box-shadow: 0 0 0 0 rgba(217, 255, 0, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(217, 255, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(217, 255, 0, 0); }
+}
+
 /* Message Bubbles */
 .msg {
   padding: 1rem 1.5rem;
@@ -418,12 +445,32 @@ canvas {
   width: 100%;
   /* For login page buttons mainly */
   gap: 0.5rem;
-  transition: var(--transition);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; 
+  left: -100%;
+  width: 50%; 
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: skewX(-20deg);
+  transition: all 0.5s ease;
+  z-index: -1;
+}
+
+.btn-primary:hover::after {
+  left: 150%;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--primary-dim);
+  box-shadow: 0 0 15px var(--primary);
 }
 
 @keyframes fadeIn {
@@ -535,6 +582,7 @@ canvas {
   padding: 4rem;
   position: relative;
   z-index: 2;
+  /* background: radial-gradient(circle at bottom left, #1a1a1a, #000); */
 }
 
 .hero-title {
@@ -563,22 +611,31 @@ canvas {
   color: #ccc;
   opacity: 0;
   animation: slideUpFade 0.6s ease forwards;
-  transition: color 0.3s ease;
   cursor: default;
+  transition: color 0.3s ease;
 }
 
 .hero-item:hover {
   color: #fff;
 }
 
-.hero-item:nth-child(1) { animation-delay: 0.2s; }
-.hero-item:nth-child(2) { animation-delay: 0.4s; }
-.hero-item:nth-child(3) { animation-delay: 0.6s; }
+.hero-item:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.hero-item:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.hero-item:nth-child(3) {
+  animation-delay: 0.6s;
+}
 
 .hero-icon {
   width: 40px;
   height: 40px;
   background: var(--card-bg);
+  /* Use card-bg instead of surface-bg (undefined) */
   border: 1px solid var(--border-color);
   border-radius: 12px;
   display: flex;
@@ -636,6 +693,7 @@ canvas {
 
 .auth-view.hidden {
   display: none !important;
+  /* Important needed to override specificity */
   opacity: 0;
   transform: translateX(20px);
 }
@@ -648,6 +706,8 @@ canvas {
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
   color: white;
+  display: block;
+  width: 100%;
 }
 
 .form-header p {
@@ -655,6 +715,7 @@ canvas {
   font-size: 0.95rem;
 }
 
+/* Input Styling for Auth */
 .input-group {
   margin-bottom: 1.25rem;
 }
@@ -667,7 +728,8 @@ canvas {
   font-weight: 500;
 }
 
-input, select {
+input,
+select {
   width: 100%;
   padding: 0.875rem 1.25rem;
   background: var(--input-bg);
@@ -678,13 +740,15 @@ input, select {
   transition: var(--transition);
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--primary);
   background: #1E1E1E;
   box-shadow: 0 0 0 2px rgba(217, 255, 0, 0.1);
 }
 
+/* Formatting Utilities */
 .password-wrapper {
   position: relative;
 }
@@ -698,7 +762,9 @@ input:focus, select:focus {
   color: #666;
 }
 
-.eye-icon:hover { color: #fff; }
+.eye-icon:hover {
+  color: #fff;
+}
 
 .error-message {
   color: var(--error);
@@ -708,6 +774,7 @@ input:focus, select:focus {
   min-height: 1.25em;
 }
 
+/* Forgot Password Link */
 .forgot-pass {
   display: block;
   text-align: right;
@@ -715,11 +782,16 @@ input:focus, select:focus {
   color: var(--text-muted);
   margin-top: 0.5rem;
   text-decoration: none;
+  transition: color 0.2s;
   cursor: pointer;
 }
 
-.forgot-pass:hover { color: var(--primary); }
+.forgot-pass:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
 
+/* Switch Text */
 .switch-text {
   margin-top: 1.5rem;
   text-align: center;
@@ -731,47 +803,39 @@ input:focus, select:focus {
   color: var(--primary);
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  margin-left: 0.25rem;
 }
 
-.switch-link:hover { text-decoration: underline; }
-
-.btn-primary {
-  background: var(--primary);
-  color: black;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
+.switch-link:hover {
+  text-decoration: underline;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 15px var(--primary);
-}
+/* Animations */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeInRight {
-  from { opacity: 0; transform: translateX(50px); }
-  to { opacity: 1; transform: translateX(0); }
-}
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
 
-@keyframes slideUpFade {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Fixed typo: TranslateY -> X? No, fadeInRight implies enter from right */
 }
 
 /* Mobile Responsive */

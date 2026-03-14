@@ -51,8 +51,6 @@
         <i class="fa-solid fa-face-smile"></i>
         <span>Personality Analyzer</span>
       </a>
-
-      <!-- Placeholder for future features or just matching layout -->
       <a class="nav-item" onclick="showView('analytics')">
         <i class="fa-solid fa-chart-line"></i>
         <span>Performance</span>
@@ -216,7 +214,7 @@
           <ul id="anaSuggestions" style="list-style: none; margin-top: 1rem; color: #888;"></ul>
 
           <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-            <button class="btn-primary" onclick=" ('resume')">Start AI Mock Interview</button>
+            <button class="btn-primary" onclick="startInterview('resume')">Start AI Mock Interview</button>
             <button onclick="document.getElementById('fileInput').click()"
               style="background: transparent; border: 1px solid #333; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Upload
               New</button>
@@ -305,9 +303,9 @@
           </div>
 
           <div class="chat-input-bar">
-            <button class="send-btn" id="micBtn" onclick="toggleMic('userInput', 'micBtn')" title="Toggle Microphone" style="margin-right: 0.5rem; background: #333;"><i class="fa-solid fa-microphone"></i></button>
             <textarea id="userInput" class="chat-input" placeholder="Type your answer here..." rows="1"
               onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
+            <button class="send-btn mic-btn" id="micBtn" onclick="toggleMic()" title="Voice Input"><i class="fa-solid fa-microphone"></i></button>
             <button class="send-btn" onclick="sendMsg()"><i class="fa-regular fa-paper-plane"></i></button>
           </div>
         </div>
@@ -318,26 +316,21 @@
     <section id="generator-view" class="view-section hidden">
       <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
         <h3 style="margin-bottom: 2rem;">Personalized Interview Question Generator</h3>
-        <p style="color: #888; margin-bottom: 2rem;">Enter a job role and description to generate personalized practice
-          questions based on your loaded resume profile.</p>
-
+        <p style="color: #888; margin-bottom: 2rem;">Enter a job role and description to generate personalized practice questions based on your loaded resume profile.</p>
+        
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
           <div>
-            <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Target Job
-              Role</label>
-            <input type="text" id="genJobRole" placeholder="e.g. Senior Frontend Developer"
-              style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Target Job Role</label>
+            <input type="text" id="genJobRole" placeholder="e.g. Senior Frontend Developer" style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px;">
           </div>
           <div></div> <!-- spacer -->
         </div>
-
+        
         <div style="margin-bottom: 1.5rem;">
-          <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Job Description
-            (Optional)</label>
-          <textarea id="genJobDesc" placeholder="Paste the job description or key requirements here..." rows="4"
-            style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; resize: none;"></textarea>
+          <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Job Description (Optional)</label>
+          <textarea id="genJobDesc" placeholder="Paste the job description or key requirements here..." rows="4" style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; resize: none;"></textarea>
         </div>
-
+        
         <button class="btn-primary" onclick="generateQuestions()" id="genBtn">
           <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Questions
         </button>
@@ -357,33 +350,24 @@
     <section id="personality-view" class="view-section hidden">
       <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
         <h3 style="margin-bottom: 2rem;">AI Interview Personality Analyzer</h3>
-        <p style="color: #888; margin-bottom: 2rem;">Write a short paragraph about yourself or how you approach
-          difficult coding problems. The AI will analyze your communication style and traits.</p>
-
+        <p style="color: #888; margin-bottom: 2rem;">Write a short paragraph about yourself or how you approach difficult coding problems. The AI will analyze your communication style and traits.</p>
+        
         <div style="margin-bottom: 1.5rem;">
-          <textarea id="persInput" placeholder="Hi, I am an experienced developer..." rows="5"
-            style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; resize: none;"></textarea>
+          <textarea id="persInput" placeholder="Hi, I am an experienced developer..." rows="5" style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; resize: none;"></textarea>
         </div>
-
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          <button class="btn-primary" onclick="analyzePersonality()" id="persBtn">
-            <i class="fa-solid fa-face-smile"></i> Analyze Personality
-          </button>
-          <button class="btn-primary" id="persMicBtn" onclick="toggleMic('persInput', 'persMicBtn')"
-            title="Toggle Microphone" style="background: #333; padding: 0.75rem 1rem;">
-            <i class="fa-solid fa-microphone"></i>
-          </button>
-        </div>
+        
+        <button class="btn-primary" onclick="analyzePersonality()" id="persBtn">
+          <i class="fa-solid fa-face-smile"></i> Analyze Personality
+        </button>
 
         <div id="persLoading" class="hidden" style="margin-top: 2rem; color: var(--primary);">
           <i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing communication style...
         </div>
 
-        <div id="persResultsBox" class="hidden"
-          style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #222;">
+        <div id="persResultsBox" class="hidden" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #222;">
           <h4 style="margin-bottom: 1rem; color: #fff;">Analysis Summary:</h4>
           <p id="persSummary" style="color: #ccc; margin-bottom: 2rem; line-height: 1.6;"></p>
-
+          
           <h4 style="margin-bottom: 1rem; color: #fff;">Key Traits:</h4>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;" id="persTraits">
           </div>
@@ -442,11 +426,6 @@
                 placeholder="e.g. Senior Backend Engineer">
             </div>
             <div class="form-group">
-              <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">Email Address</label>
-              <input type="email" id="setEmail" class="profile-input"
-                style="width:100%; opacity:0.6; cursor:not-allowed;" disabled>
-            </div>
-            <div class="form-group">
               <label style="color:#888; font-size:0.85rem; display:block; margin-bottom:0.5rem;">Experience
                 Level</label>
               <input type="text" id="setExperience" class="profile-input" style="width:100%;"
@@ -496,62 +475,67 @@
         <p class="profile-role" id="modalRoleDisplay">Software Engineer</p>
 
         <div class="social-links">
-          <div class="social-item" id="modalWebsiteDisplay">
+          <div class="social-item">
             <i class="fa-solid fa-globe"></i>
-            <span>Not provided</span>
+            <span>website.com</span>
           </div>
-          <div class="social-item" id="modalGithubDisplay">
+          <div class="social-item">
             <i class="fa-brands fa-github"></i>
-            <span>Not provided</span>
-          </div>
-          <div class="social-item" id="modalLinkedinDisplay">
-            <i class="fa-brands fa-linkedin"></i>
-            <span>Not provided</span>
+            <span>github.com/user</span>
           </div>
         </div>
       </div>
 
-      <!-- Right: Content (View Only) -->
+      <!-- Right: Content -->
       <div class="profile-content">
         <h3 class="section-title">Personal Details</h3>
-        <div class="form-grid" style="row-gap: 1.5rem;">
+        <div class="form-grid">
           <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">Full Name</label>
-            <div id="viewName" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
+            <label style="color:#888; font-size:0.85rem;">Full Name</label>
+            <input type="text" id="editName" class="profile-input" value="User Name" readonly style="cursor:default;">
           </div>
           <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">Current Job
-              Role</label>
-            <div id="viewRole" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
+            <label style="color:#888; font-size:0.85rem;">Current Job Role</label>
+            <input type="text" id="editRole" class="profile-input" placeholder="e.g. Software Engineer" readonly style="cursor:default;">
           </div>
           <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">Email</label>
-            <div id="viewEmail" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
+            <label style="color:#888; font-size:0.85rem;">Email</label>
+            <input type="email" id="editEmail" class="profile-input" value="user@example.com" disabled
+              style="opacity:0.6; cursor:not-allowed;">
           </div>
           <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">Experience
-              Level</label>
-            <div id="viewExperience" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
+            <label style="color:#888; font-size:0.85rem;">Experience Level</label>
+            <input type="text" id="editExperience" class="profile-input" value="Entry" readonly style="cursor:default;">
           </div>
           <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">GitHub Link</label>
-            <div id="viewGithub" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
+            <label style="color:#888; font-size:0.85rem;">Phone</label>
+            <input type="text" id="editPhone" class="profile-input" placeholder="+1 (555) 000-0000" readonly style="cursor:default;">
           </div>
           <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">LinkedIn Link</label>
-            <div id="viewLinkedin" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
+            <label style="color:#888; font-size:0.85rem;">Mobile</label>
+            <input type="text" id="editMobile" class="profile-input" placeholder="+1 (555) 000-0000" readonly style="cursor:default;">
           </div>
-          <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">Portfolio /
-              Website</label>
-            <div id="viewPortfolio" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
-          </div>
-          <div class="form-group">
-            <label style="color:#888; font-size:0.85rem; margin-bottom: 0.25rem; display:block;">Phone Number</label>
-            <div id="viewPhone" style="color: white; font-size: 1rem; font-weight: 500;">-</div>
+          <div class="form-group full-width">
+            <label style="color:#888; font-size:0.85rem;">Address</label>
+            <input type="text" id="editAddress" class="profile-input" placeholder="e.g. San Francisco, CA" readonly style="cursor:default;">
           </div>
         </div>
 
+        <h3 class="section-title">Professional Links</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">GitHub</label>
+            <input type="text" id="editGithub" class="profile-input" placeholder="github.com/" readonly style="cursor:default;">
+          </div>
+          <div class="form-group">
+            <label style="color:#888; font-size:0.85rem;">Website</label>
+            <input type="text" id="editWebsite" class="profile-input" placeholder="https://" readonly style="cursor:default;">
+          </div>
+        </div>
+
+        <button class="save-btn" onclick="saveProfile()" style="display: none;">
+          <i class="fa-solid fa-floppy-disk"></i> Save Changes
+        </button>
       </div>
     </div>
   </div>
@@ -563,7 +547,6 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
-
     const API = "http://localhost:3000";
     const email = localStorage.getItem("userEmail");
     const jwtToken = localStorage.getItem("jwtToken");
@@ -575,6 +558,9 @@
     const apiFetch = async (url, options = {}) => {
       const headers = options.headers || {};
       if (jwtToken) headers['Authorization'] = `Bearer ${jwtToken}`;
+      if (options.body && typeof options.body === 'string' && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
       options.headers = headers;
       return fetch(url, options);
     };
@@ -625,20 +611,10 @@
     }
 
     // Initialize UI
-    function updateHeaderName(name) {
-      document.getElementById("userName").innerText = name;
-      const initials = name ? name[0].toUpperCase() : "U";
-      const avatarEl = document.getElementById("avatarInitials");
-      if (avatarEl) {
-        avatarEl.innerText = initials;
-        avatarEl.style.cursor = "pointer";
-        avatarEl.onclick = openProfile;
-      }
-    }
-
     const storedName = localStorage.getItem("userName");
     const defaultName = storedName || email.split('@')[0];
-    updateHeaderName(defaultName);
+    document.getElementById("userName").innerText = defaultName;
+    document.getElementById("avatarInitials").innerText = defaultName[0].toUpperCase();
 
     // Make Avatar Clickable
     document.getElementById("avatarInitials").style.cursor = "pointer";
@@ -653,13 +629,10 @@
       try {
         const res = await apiFetch(`${API}/user-profile/${email}`);
         const user = await res.json();
-        if (user.name) {
-          updateHeaderName(user.name);
-          localStorage.setItem("userName", user.name);
-        }
-        if (user.role) {
-          document.getElementById("modalRoleDisplay").innerText = user.role;
-          localStorage.setItem("userRole", user.role);
+        const initialsEl = document.getElementById("avatarInitials");
+        if (initialsEl && user.name) {
+          initialsEl.innerText = user.name[0].toUpperCase();
+          initialsEl.innerHTML = user.name[0].toUpperCase();
         }
       } catch (e) { }
     }
@@ -673,22 +646,14 @@
         const res = await apiFetch(`${API}/user-profile/${email}`);
         const user = await res.json();
 
-        document.getElementById("viewName").innerText = user.name || "Not provided";
-        document.getElementById("viewRole").innerText = user.role || "Not provided";
+        document.getElementById("editName").value = user.name || "";
+        document.getElementById("editRole").value = user.role || "";
         document.getElementById("modalNameDisplay").innerText = user.name || "User Name";
         document.getElementById("modalRoleDisplay").innerText = user.role || "Software Engineer";
-        document.getElementById("viewEmail").innerText = email;
-        document.getElementById("viewExperience").innerText = user.experienceLevel || "Entry";
-        document.getElementById("viewGithub").innerText = user.github || "Not provided";
-        document.getElementById("viewLinkedin").innerText = user.linkedin || "Not provided";
-        document.getElementById("viewPortfolio").innerText = user.portfolio || "Not provided";
-        document.getElementById("viewPhone").innerText = user.phone || "Not provided";
-
-        // Update Social Links in the modal sidebar
-        document.getElementById("modalWebsiteDisplay").querySelector("span").innerText = user.portfolio || "Not provided";
-        document.getElementById("modalGithubDisplay").querySelector("span").innerText = user.github || "Not provided";
-        document.getElementById("modalLinkedinDisplay").querySelector("span").innerText = user.linkedin || "Not provided";
-
+        document.getElementById("editEmail").value = email;
+        document.getElementById("editExperience").value = user.experienceLevel || "Entry";
+        document.getElementById("editPhone").value = user.phone || "";
+        // No avatar display, using initials in header
       } catch (e) { console.error("Open Profile Error", e); }
 
       modal.classList.add("active");
@@ -756,7 +721,6 @@
         'settings': 'Settings & Profile'
       };
       document.getElementById("pageTitle").innerText = titles[viewId];
-
       // 4. Update Nav Active State
       document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
       // Simple heuristic for nav highlighting
@@ -764,7 +728,22 @@
       const navIndex = navItems.indexOf(viewId);
       if (navIndex >= 0) document.querySelectorAll(".nav-item")[navIndex].classList.add("active");
 
-      // 5. Load Data
+      // 5. Cleanup when leaving interview view
+      if (viewId !== 'interview') {
+        if (typeof stopTimer === 'function') stopTimer();
+        if (typeof stopMic === 'function') stopMic();
+        const chatBox = document.getElementById("chatBox");
+        if (chatBox) {
+            chatBox.innerHTML = '<div class="msg ai">Select your settings on the left and click "Start Session" to begin practicing! 🚀</div>';
+        }
+        const intStatus = document.getElementById("intStatus");
+        if (intStatus) {
+            intStatus.innerText = "• Idle";
+            intStatus.style.color = "#666";
+        }
+      }
+
+      // 6. Load Data
       if (viewId === 'dashboard') loadDashboardData();
       if (viewId === 'resume') loadResumeHistory();
       if (viewId === 'analytics') loadHistory();
@@ -781,7 +760,6 @@
 
         document.getElementById('setFullName').value = user.name || "";
         document.getElementById('setRole').value = user.role || "";
-        document.getElementById('setEmail').value = email;
         document.getElementById('setExperience').value = user.experienceLevel || "Entry";
         document.getElementById('setGithub').value = user.github || "";
         document.getElementById('setLinkedin').value = user.linkedin || "";
@@ -790,12 +768,6 @@
 
         document.getElementById('settingsNameDisplay').innerText = user.name || "User Name";
         document.getElementById('settingsRoleDisplay').innerText = user.role || "Software Engineer";
-
-        // Ensure Header is also perfectly synced on load just in case
-        if (user.name) {
-          localStorage.setItem("userName", user.name);
-          updateHeaderName(user.name);
-        }
       } catch (e) { console.error("Load Settings Error", e); }
     }
 
@@ -829,8 +801,9 @@
           document.getElementById('settingsNameDisplay').innerText = data.user.name;
           document.getElementById('settingsRoleDisplay').innerText = data.user.role;
 
-          // Update Initials and Header
-          updateHeaderName(data.user.name);
+          // Update Initials
+          const initialsEl = document.getElementById("avatarInitials");
+          if (initialsEl) initialsEl.innerText = data.user.name[0].toUpperCase();
         } else {
           showToast("Update failed: " + data.message);
         }
@@ -842,6 +815,79 @@
 
 
     // -- Dashboard Data (UPDATED: Dynamic) --
+    let recognition;
+    let isListening = false;
+    const micBtn = document.getElementById("micBtn");
+    const userinputField = document.getElementById("userInput");
+
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = function() {
+        isListening = true;
+        if(micBtn) {
+            micBtn.classList.add("active-mic");
+            micBtn.innerHTML = '<i class="fa-solid fa-microphone-lines fa-fade"></i>';
+        }
+      };
+
+      recognition.onresult = function(event) {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+             const currentVal = userinputField.value;
+             userinputField.value = currentVal + (currentVal.length > 0 && !currentVal.endsWith(' ') ? ' ' : '') + finalTranscript + ' ';
+        }
+      };
+
+      recognition.onerror = function(event) {
+        console.error("Speech recognition error:", event.error);
+        stopMic();
+      };
+
+      recognition.onend = function() {
+        stopMic();
+      };
+    } else {
+      console.warn("Speech recognition not supported in this browser.");
+      if (micBtn) {
+        micBtn.style.display = 'none';
+      }
+    }
+
+    function toggleMic() {
+      if (!recognition) return showToast("Speech recognition not supported in your browser.");
+      
+      if (isListening) {
+        stopMic();
+      } else {
+        try {
+          recognition.start();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+    }
+
+    function stopMic() {
+      if (recognition && isListening) {
+        try { recognition.stop(); } catch(e){}
+        isListening = false;
+        if(micBtn) {
+            micBtn.classList.remove("active-mic");
+            micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+        }
+      }
+    }
+
     async function loadDashboardData() {
       try {
         const res = await apiFetch(`${API}/user-dashboard/${email}`);
@@ -865,11 +911,11 @@
           document.getElementById("totalQs").innerText = data.stats.totalQuestions;
           document.getElementById("avgScore").innerText = data.stats.avgScore !== 0 ? data.stats.avgScore + "/10" : "--";
 
-          // Update Practice Time (Check if element exists first)
+          // Update Practice Time
           const timeEl = document.getElementById("practiceTime");
           if (timeEl) timeEl.innerText = data.stats.practiceTime || "0m";
 
-          // Update Streak
+          // Update Practice Streak
           const streakEl = document.getElementById("practiceStreak");
           if (streakEl) streakEl.innerText = (data.stats.practiceStreak || 0) + " Days";
 
@@ -1227,83 +1273,26 @@
       document.getElementById("countdownBox").classList.add("hidden");
     }
 
-
-
-
-
     async function initSession() {
+      const mode = document.getElementById("intMode").value;
+      const skill = document.getElementById("customSkill").value;
 
-      try {
+      questionLimit = parseInt(document.getElementById("questionCount").value) || 5;
+      questionsAnswered = 0;
 
-        const count = document.getElementById("questionCount").value;
+      document.getElementById("intStatus").innerText = "• Active";
+      document.getElementById("intStatus").style.color = "#D9FF00";
+      document.getElementById("chatBox").innerHTML = `<div class="msg ai">Starting ${mode} interview...</div>`;
 
-        const res = await fetch(`${API}/generate-questions?count=${count}&email=${email}`);
-
-        const data = await res.json();
-
-        const questions = data.questions;
-
-        const container = document.getElementById("questionsContainer");
-        container.innerHTML = "";
-
-        questions.forEach((q, index) => {
-
-          container.innerHTML += `
-      <div style="margin-bottom:20px;background:#111;padding:15px;border-radius:10px">
-
-        <p><b>Question ${index + 1}:</b> ${q}</p>
-
-        <textarea id="answer_${index}" rows="3"
-        style="width:100%;margin-top:8px;background:#000;color:white;border:1px solid #333;border-radius:6px;padding:8px"></textarea>
-
-        <br>
-
-        <button onclick="startSpeech(${index})"
-        style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
-        🎤 Speak
-        </button>
-
-      </div>
-      `;
-
-        });
-
-      } catch (err) {
-        console.log(err);
-        alert("Error loading questions");
-      }
-
-    }
-
-    async function submitAllAnswers() {
-
-      const answers = [];
-
-      document.querySelectorAll("textarea").forEach(a => {
-        answers.push(a.value);
-      });
-
-      const res = await fetch(`${API}/submit-answers`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: email,
-          answers: answers
-        })
-      });
-
-      const data = await res.json();
-
-      alert("Interview Completed! Score: " + data.score);
-
+      await sendMsg("Let's start the interview.", true);
     }
 
     async function sendMsg(overrideText = null, isFirst = false, isTimeout = false) {
-      if (typeof isRecording !== 'undefined' && isRecording) {
-        stopMic();
+      // 🛑 Ensure microphone recording stops when a message is sent
+      if (typeof stopMic === 'function') {
+         stopMic();
       }
+
       const input = document.getElementById("userInput");
       const text = isTimeout ? "[TIMEOUT]" : (overrideText || input.value.trim());
 
@@ -1336,297 +1325,115 @@
       }
     }
 
+    // -- Generator Logic --
     async function generateQuestions() {
-      const jobRole = document.getElementById("genJobRole").value;
-      const jobDescription = document.getElementById("genJobDesc").value;
-      const btn = document.getElementById("genBtn");
-      const loading = document.getElementById("genLoading");
-      const resultBox = document.getElementById("genResultsBox");
-      const list = document.getElementById("genQuestionsList");
-
-      if (!jobRole) {
+      const role = document.getElementById("genJobRole").value;
+      const desc = document.getElementById("genJobDesc").value;
+      
+      if (!role) {
         showToast("Please enter a target job role.");
         return;
       }
-
+      
+      const btn = document.getElementById("genBtn");
+      const loading = document.getElementById("genLoading");
+      const resultsBox = document.getElementById("genResultsBox");
+      const list = document.getElementById("genQuestionsList");
+      
       btn.disabled = true;
       loading.classList.remove("hidden");
-      resultBox.classList.add("hidden");
-
+      resultsBox.classList.add("hidden");
+      
       try {
         const res = await apiFetch(`${API}/generate-questions`, {
           method: "POST",
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, jobRole, jobDescription })
+          body: JSON.stringify({ email, jobRole: role, jobDescription: desc })
         });
         const data = await res.json();
-        if (data.success) {
-          list.innerHTML = data.questions.map(q => `<li style="margin-bottom: 1rem;">${q}</li>`).join("");
-          resultBox.classList.remove("hidden");
-        } else {
-          showToast(data.message || "Failed to generate questions.");
-        }
-      } catch (e) {
-        showToast("Error connecting to server.");
-      } finally {
+        
         btn.disabled = false;
         loading.classList.add("hidden");
+        
+        if (data.success && data.questions) {
+          list.innerHTML = "";
+          data.questions.forEach(q => {
+            const li = document.createElement("li");
+            li.style.marginBottom = "0.5rem";
+            li.textContent = q;
+            list.appendChild(li);
+          });
+          resultsBox.classList.remove("hidden");
+        } else {
+          showToast(data.message || "Failed to generate questions");
+        }
+      } catch (err) {
+        btn.disabled = false;
+        loading.classList.add("hidden");
+        showToast("Error generating questions.");
+        console.error(err);
       }
     }
 
+    // -- Personality Logic --
     async function analyzePersonality() {
-      const textInput = document.getElementById("persInput").value;
-      const btn = document.getElementById("persBtn");
-      const loading = document.getElementById("persLoading");
-      const resultBox = document.getElementById("persResultsBox");
-      const summary = document.getElementById("persSummary");
-      const traitsBox = document.getElementById("persTraits");
-
-      if (textInput.length < 20) {
-        showToast("Please enter at least 20 characters.");
+      const input = document.getElementById("persInput").value;
+      
+      if (!input || input.length < 20) {
+        showToast("Please enter at least 20 characters for a better analysis.");
         return;
       }
-
+      
+      const btn = document.getElementById("persBtn");
+      const loading = document.getElementById("persLoading");
+      const resultsBox = document.getElementById("persResultsBox");
+      
       btn.disabled = true;
       loading.classList.remove("hidden");
-      resultBox.classList.add("hidden");
-
+      resultsBox.classList.add("hidden");
+      
       try {
         const res = await apiFetch(`${API}/analyze-personality`, {
           method: "POST",
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, textInput })
+          body: JSON.stringify({ email, textInput: input })
         });
         const data = await res.json();
-        if (data.success) {
-          summary.innerText = data.analysis.summary;
-          traitsBox.innerHTML = Object.entries(data.analysis.traits).map(([trait, score]) => `
-            <div style="background: #000; padding: 1rem; border: 1px solid #222; border-radius: 8px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                <span style="color: #888;">${trait}</span>
-                <span style="color: var(--primary); font-weight: 600;">${score}%</span>
-              </div>
-              <div style="height: 4px; background: #111; border-radius: 2px; overflow: hidden;">
-                <div style="height: 100%; width: ${score}%; background: var(--primary);"></div>
-              </div>
-            </div>
-          `).join("");
-          resultBox.classList.remove("hidden");
-        } else {
-          showToast(data.message || "Failed to analyze personality.");
-        }
-      } catch (e) {
-        showToast("Error connecting to server.");
-      } finally {
+        
         btn.disabled = false;
         loading.classList.add("hidden");
+        
+        if (data.success && data.analysis) {
+          document.getElementById("persSummary").textContent = data.analysis.summary;
+          
+          const traitsBox = document.getElementById("persTraits");
+          traitsBox.innerHTML = "";
+          
+          const traits = data.analysis.traits || {};
+          Object.keys(traits).forEach(key => {
+            const val = traits[key];
+            traitsBox.innerHTML += `
+              <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid #333; text-align: center;">
+                <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem; text-transform: uppercase;">${key}</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">${val}/100</div>
+              </div>
+            `;
+          });
+          
+          resultsBox.classList.remove("hidden");
+        } else {
+          showToast(data.message || "Failed to analyze personality");
+        }
+      } catch (err) {
+        btn.disabled = false;
+        loading.classList.add("hidden");
+        showToast("Error analyzing personality.");
+        console.error(err);
       }
-    }
-
-    // -- Mic / Speech-to-Text Logic --
-    let recognition;
-    let isRecording = false;
-    let currentMicInputId = null;
-    let currentMicBtnId = null;
-
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      let finalTranscriptText = '';
-
-      recognition.onstart = () => {
-        if (currentMicInputId) {
-          finalTranscriptText = document.getElementById(currentMicInputId).value;
-        }
-      };
-
-      recognition.onresult = (event) => {
-        let interimTranscript = '';
-        let newFinal = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            newFinal += event.results[i][0].transcript;
-          } else {
-            interimTranscript += event.results[i][0].transcript;
-          }
-        }
-
-        if (newFinal) {
-          finalTranscriptText += (finalTranscriptText ? " " : "") + newFinal;
-        }
-
-        if (currentMicInputId) {
-          const inputElement = document.getElementById(currentMicInputId);
-          if (inputElement) {
-            inputElement.value = finalTranscriptText + (interimTranscript ? " " + interimTranscript : "");
-          }
-        }
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        stopMic();
-      };
-
-      recognition.onend = () => {
-        if (isRecording) {
-          stopMic();
-        }
-      };
-    } else {
-      console.warn('Speech Recognition API not supported in this browser.');
-    }
-
-    function toggleMic(inputId = 'userInput', btnId = 'micBtn') {
-      if (!recognition) {
-        showToast("Speech recognition is not supported in your browser.");
-        return;
-      }
-
-      // If a mic is currently recording on a different input, stop it first
-      if (isRecording && currentMicInputId !== inputId) {
-        stopMic();
-        // Short delay to allow `stop()` to process before starting a new one
-        setTimeout(() => {
-          currentMicInputId = inputId;
-          currentMicBtnId = btnId;
-          startMic();
-        }, 300);
-        return;
-      }
-
-      currentMicInputId = inputId;
-      currentMicBtnId = btnId;
-
-      if (isRecording) {
-        stopMic();
-      } else {
-        startMic();
-      }
-    }
-
-    function startMic() {
-      try {
-        recognition.start();
-        isRecording = true;
-        if (currentMicBtnId) {
-          const micBtn = document.getElementById(currentMicBtnId);
-          if (micBtn) {
-            micBtn.style.color = "#ff4444";
-            micBtn.querySelector("i").classList.add("fa-beat-fade");
-          }
-        }
-      } catch (e) {
-        console.error("Mic start error", e);
-      }
-    }
-
-    function stopMic() {
-      try {
-        recognition.stop();
-      } catch (e) { }
-      isRecording = false;
-      if (currentMicBtnId) {
-        const micBtn = document.getElementById(currentMicBtnId);
-        if (micBtn) {
-          micBtn.style.color = "";
-          micBtn.querySelector("i").classList.remove("fa-beat-fade");
-        }
-      }
-      // Reset input tracking after stopping? Not strictly necessary unless we want to "freeze" it.
     }
 
     // Init Page
     loadDashboardData();
-    function startSpeech(index) {
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (!SpeechRecognition) {
-        alert("Speech Recognition not supported in this browser");
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-
-      recognition.lang = "en-US";
-
-      recognition.start();
-
-      recognition.onresult = function (event) {
-
-        const transcript = event.results[0][0].transcript;
-
-        document.getElementById("answer_" + index).value += transcript;
-
-      };
-
-      recognition.onerror = function (event) {
-        console.log(event.error);
-      };
-
-    }
 
   </script>
-  <script>
-
-    function startInterview() {
-
-      const email = localStorage.getItem("email");
-
-      window.socket = io();
-
-      socket.on("connect", () => {
-
-        console.log("Connected to server");
-
-        socket.emit("chatMessage", {
-          email: email,
-          message: "start",
-          context: { mode: "general" },
-          isFirst: true
-        });
-
-      });
-
-      socket.on("chatResponse", (data) => {
-
-        const container = document.getElementById("interviewArea");
-
-        container.innerHTML = `
-      <h3>Interview Question</h3>
-      <p>${data.reply}</p>
-
-      <textarea id="answerBox" rows="4" style="width:100%"></textarea>
-
-      <button onclick="submitAnswer()">Submit Answer</button>
-    `;
-
-      });
-
-    }
-
-    function submitAnswer() {
-
-      const answer = document.getElementById("answerBox").value;
-      const email = localStorage.getItem("email");
-
-      socket.emit("chatMessage", {
-        email: email,
-        message: answer,
-        context: { mode: "general" },
-        isFirst: false,
-        timeTaken: 10
-      });
-
-    }
-
-  </script>
-  <script src="/socket.io/socket.io.js"></script>
 </body>
 
 </html>

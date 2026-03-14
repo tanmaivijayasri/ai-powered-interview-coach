@@ -6,7 +6,7 @@ const path = require("path");
 const http = require("http");
 
 // Optional Dependencies with Safe Loading
-let cors, bcrypt, mongoose, multer, jwt, socketIo, nodemailer;
+let cors, bcrypt, mongoose, multer, jwt, socketIo, nodemailer, rateLimit;
 try { cors = require("cors"); } catch (e) { console.warn("⚠️ cors missing, using default."); }
 try { bcrypt = require("bcrypt"); } catch (e) { console.warn("⚠️ bcrypt missing, auth disabled."); }
 try { mongoose = require("mongoose"); } catch (e) { console.warn("⚠️ mongoose missing, DB features disabled."); }
@@ -193,16 +193,14 @@ if (User && bcrypt) {
 
 
   app.post("/login", async (req, res) => {
-    const { email, password } = req.body; // 'email' field now holds either email or username
+    const { email, password } = req.body; // the front-end still sends this as 'email' even if it's a username
     try {
-      // Find user by email OR name (username)
       const user = await User.findOne({
         $or: [
           { email: email },
           { name: email }
         ]
       });
-
       if (user && await bcrypt.compare(password, user.password)) {
         let token = null;
         if (jwt) {
@@ -216,10 +214,7 @@ if (User && bcrypt) {
       } else {
         res.status(401).json({ success: false, message: "Invalid credentials" });
       }
-    } catch (e) {
-      console.error("Login error:", e);
-      res.status(500).json({ message: "Login error" });
-    }
+    } catch (e) { res.status(500).json({ message: "Login error" }); }
   });
 
   /* --- PASSWORD RESET --- */
@@ -330,7 +325,7 @@ if (User && bcrypt) {
       const user = await User.findOneAndUpdate(
         { email: req.params.email },
         { name, role, experienceLevel, github, linkedin, portfolio, phone },
-        { returnDocument: 'after' }
+        { new: true }
       );
       if (!user) return res.status(404).json({ message: "User not found" });
       res.json({ success: true, user: { name: user.name, email: user.email, role: user.role, experienceLevel: user.experienceLevel } });
@@ -742,7 +737,6 @@ Return STRICT JSON only:
           }
         }
 
-        // 2. Generate Next Question
         let contextData = "";
         if (context.mode === 'resume' && resumeData) {
           contextData = `
@@ -761,6 +755,17 @@ Return STRICT JSON only:
             `;
         }
 
+        // Fetch previously generated questions to avoid repetition during the mock interview
+        if (GeneratedQuestion) {
+          const pastQs = await GeneratedQuestion.find({ userEmail: email }).sort({ timestamp: -1 }).limit(10);
+          if (pastQs.length > 0) {
+            contextData += `\nPREVIOUSLY ASKED QUESTIONS (CRITICAL: DO NOT REPEAT OR REPHRASE THESE):\n`;
+            pastQs.forEach((q, i) => {
+              contextData += `${i + 1}. ${q.questionText}\n`;
+            });
+          }
+        }
+
         const nextQPrompt = `
             Generate the next interview question.
               Context: ${contextData}
@@ -768,7 +773,7 @@ Return STRICT JSON only:
             - User's Last Answer: "${message}"
               - AI Feedback: ${JSON.stringify(evaluation)}
 
-            Constraint: Keep the question concise and professional.
+            Constraint: Keep the question concise and professional. You MUST NOT ask any question that is similar to the "PREVIOUSLY ASKED QUESTIONS" list.
             Return JSON strictly: { "message": "string" }
             `;
         const nextQ = await callAI(nextQPrompt);
