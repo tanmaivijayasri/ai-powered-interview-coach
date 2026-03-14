@@ -6,7 +6,7 @@ const path = require("path");
 const http = require("http");
 
 // Optional Dependencies with Safe Loading
-let cors, bcrypt, mongoose, multer, jwt, socketIo, nodemailer;
+let cors, bcrypt, mongoose, multer, jwt, socketIo, nodemailer, rateLimit;
 try { cors = require("cors"); } catch (e) { console.warn("⚠️ cors missing, using default."); }
 try { bcrypt = require("bcrypt"); } catch (e) { console.warn("⚠️ bcrypt missing, auth disabled."); }
 try { mongoose = require("mongoose"); } catch (e) { console.warn("⚠️ mongoose missing, DB features disabled."); }
@@ -761,6 +761,16 @@ Return STRICT JSON only:
             `;
         }
 
+        if (GeneratedQuestion) {
+          const pastQs = await GeneratedQuestion.find({ userEmail: email, sessionMode: context.mode }).sort({ timestamp: -1 }).limit(10);
+          if (pastQs.length > 0) {
+            contextData += `\nPREVIOUSLY ASKED QUESTIONS (DO NOT ASK THESE AGAIN):\n`;
+            pastQs.forEach((q, i) => {
+              contextData += `${i + 1}. ${q.questionText}\n`;
+            });
+          }
+        }
+
         const nextQPrompt = `
             Generate the next interview question.
               Context: ${contextData}
@@ -768,7 +778,7 @@ Return STRICT JSON only:
             - User's Last Answer: "${message}"
               - AI Feedback: ${JSON.stringify(evaluation)}
 
-            Constraint: Keep the question concise and professional.
+            Constraint: Keep the question concise, professional, and entirely different from the PREVIOUSLY ASKED QUESTIONS.
             Return JSON strictly: { "message": "string" }
             `;
         const nextQ = await callAI(nextQPrompt);

@@ -130,47 +130,65 @@ function getSmartMockResponse(prompt) {
             "react": [
                 "What are React Hooks and why do we use them?",
                 "Can you explain the difference between state and props?",
-                "How does the virtual DOM work in React?"
+                "How does the virtual DOM work in React?",
+                "Can you explain the useEffect hook?",
+                "How do you handle routing in React applications?"
             ],
             "node.js": [
                 "How does the Event Loop work in Node.js?",
                 "What is the purpose of middleware in Express.js?",
-                "Explain how streams work in Node.js."
+                "Explain how streams work in Node.js.",
+                "How do you handle errors in Node.js applications?",
+                "Explain the concept of EventEmitter."
             ],
             "node": [
                 "How does the Event Loop work in Node.js?",
                 "What is the purpose of middleware in Express.js?",
-                "Explain how streams work in Node.js."
+                "Explain how streams work in Node.js.",
+                "How do you handle errors in Node.js applications?",
+                "Explain the concept of EventEmitter."
             ],
             "javascript": [
                 "Explain the difference between let, const, and var.",
                 "What is a closure in JavaScript?",
-                "Can you explain promises and async/await?"
+                "Can you explain promises and async/await?",
+                "What is the difference between == and ===?",
+                "Explain event bubbling and event capturing."
             ],
             "java": [
                 "What is the difference between an interface and an abstract class?",
                 "Explain the concept of multithreading in Java.",
-                "How does Garbage Collection work in Java?"
+                "How does Garbage Collection work in Java?",
+                "What are the different types of memory areas allocated by JVM?",
+                "Explain the difference between HashMap and HashTable."
             ],
             "python": [
                 "What are decorators in Python and how do you use them?",
                 "Can you explain the difference between lists and tuples?",
-                "What is the Global Interpreter Lock (GIL) in Python?"
+                "What is the Global Interpreter Lock (GIL) in Python?",
+                "How is memory managed in Python?",
+                "What are lambda functions in Python?"
             ],
             "sql": [
                 "What is the difference between a LEFT JOIN and an INNER JOIN?",
                 "Explain what indexing is in a database.",
-                "How do you optimize a slow-running SQL query?"
+                "How do you optimize a slow-running SQL query?",
+                "What are ACID properties?",
+                "Explain the difference between TRUNCATE, DELETE, and DROP."
             ],
             "database": [
                 "What is the difference between SQL and NoSQL?",
                 "Explain what indexing is in a database.",
-                "How do you define ACID properties?"
+                "How do you define ACID properties?",
+                "What is database normalization?",
+                "What are the advantages of using a NoSQL database?"
             ],
             "aws": [
                 "What is the difference between an EC2 instance and a serverless Lambda function?",
                 "Can you explain what an S3 bucket is and how to secure it?",
-                "How do you use IAM to control AWS resources?"
+                "How do you use IAM to control AWS resources?",
+                "Explain what Amazon VPC is.",
+                "How do you manage database deployments in AWS?"
             ]
         };
 
@@ -178,22 +196,30 @@ function getSmartMockResponse(prompt) {
 
         // Find matching topic in our mapping
         const topicKey = Object.keys(specificQuestions).find(key => combinedContext.includes(key));
+        let list = [];
 
         if (topicKey) {
-            const list = specificQuestions[topicKey];
-            const index = prompt.length % list.length;
-            chosenQuestion = list[index];
+            list = specificQuestions[topicKey];
         } else {
             const displayTopic = extractedTopic || extractedRole || "your area of expertise";
-            const fallbackTopics = [
+            list = [
                 `Can you explain a complex concept related to ${displayTopic}?`,
                 `What are the best practices for working with ${displayTopic}?`,
                 `Describe a challenging problem you solved using ${displayTopic}.`,
                 `If you were designing a scalable architecture for a system involving ${displayTopic}, what key factors would you consider?`,
                 `Can you tell me about the most difficult bug you've had to fix in ${displayTopic}?`
             ];
-            const index = prompt.length % fallbackTopics.length;
-            chosenQuestion = fallbackTopics[index];
+        }
+
+        // Filter out questions that are already in the prompt (previously asked)
+        const unaskedQuestions = list.filter(q => !prompt.includes(q));
+
+        if (unaskedQuestions.length > 0) {
+            // Pick randomly from unasked questions to avoid prompt length repeats
+            chosenQuestion = unaskedQuestions[Math.floor(Math.random() * unaskedQuestions.length)];
+        } else {
+            // Fallback if we exhausted the list
+            chosenQuestion = "Could you elaborate more on your recent technical experience?";
         }
 
         return {

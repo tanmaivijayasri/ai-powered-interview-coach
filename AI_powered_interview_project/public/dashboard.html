@@ -776,7 +776,7 @@
 
     async function loadSettings() {
       try {
-        const res = await fetch(`${API}/user-profile/${email}`);
+        const res = await apiFetch(`${API}/user-profile/${email}`);
         const user = await res.json();
 
         document.getElementById('setFullName').value = user.name || "";
@@ -1232,72 +1232,17 @@
 
 
     async function initSession() {
+      const mode = document.getElementById("intMode").value;
+      const skill = document.getElementById("customSkill").value;
 
-      try {
+      questionLimit = parseInt(document.getElementById("questionCount").value) || 5;
+      questionsAnswered = 0;
 
-        const count = document.getElementById("questionCount").value;
+      document.getElementById("intStatus").innerText = "• Active";
+      document.getElementById("intStatus").style.color = "#D9FF00";
+      document.getElementById("chatBox").innerHTML = `<div class="msg ai">Starting ${mode} interview...</div>`;
 
-        const res = await fetch(`${API}/generate-questions?count=${count}&email=${email}`);
-
-        const data = await res.json();
-
-        const questions = data.questions;
-
-        const container = document.getElementById("questionsContainer");
-        container.innerHTML = "";
-
-        questions.forEach((q, index) => {
-
-          container.innerHTML += `
-      <div style="margin-bottom:20px;background:#111;padding:15px;border-radius:10px">
-
-        <p><b>Question ${index + 1}:</b> ${q}</p>
-
-        <textarea id="answer_${index}" rows="3"
-        style="width:100%;margin-top:8px;background:#000;color:white;border:1px solid #333;border-radius:6px;padding:8px"></textarea>
-
-        <br>
-
-        <button onclick="startSpeech(${index})"
-        style="margin-top:5px;background:#9D00FF;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
-        🎤 Speak
-        </button>
-
-      </div>
-      `;
-
-        });
-
-      } catch (err) {
-        console.log(err);
-        alert("Error loading questions");
-      }
-
-    }
-
-    async function submitAllAnswers() {
-
-      const answers = [];
-
-      document.querySelectorAll("textarea").forEach(a => {
-        answers.push(a.value);
-      });
-
-      const res = await fetch(`${API}/submit-answers`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: email,
-          answers: answers
-        })
-      });
-
-      const data = await res.json();
-
-      alert("Interview Completed! Score: " + data.score);
-
+      await sendMsg("Let's start the interview.", true);
     }
 
     async function sendMsg(overrideText = null, isFirst = false, isTimeout = false) {
@@ -1572,61 +1517,7 @@
     }
 
   </script>
-  <script>
-
-    function startInterview() {
-
-      const email = localStorage.getItem("email");
-
-      window.socket = io();
-
-      socket.on("connect", () => {
-
-        console.log("Connected to server");
-
-        socket.emit("chatMessage", {
-          email: email,
-          message: "start",
-          context: { mode: "general" },
-          isFirst: true
-        });
-
-      });
-
-      socket.on("chatResponse", (data) => {
-
-        const container = document.getElementById("interviewArea");
-
-        container.innerHTML = `
-      <h3>Interview Question</h3>
-      <p>${data.reply}</p>
-
-      <textarea id="answerBox" rows="4" style="width:100%"></textarea>
-
-      <button onclick="submitAnswer()">Submit Answer</button>
-    `;
-
-      });
-
-    }
-
-    function submitAnswer() {
-
-      const answer = document.getElementById("answerBox").value;
-      const email = localStorage.getItem("email");
-
-      socket.emit("chatMessage", {
-        email: email,
-        message: answer,
-        context: { mode: "general" },
-        isFirst: false,
-        timeTaken: 10
-      });
-
-    }
-
   </script>
-  <script src="/socket.io/socket.io.js"></script>
 </body>
 
 </html>
