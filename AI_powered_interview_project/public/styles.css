@@ -850,15 +850,16 @@ input:focus, select:focus {
     border-color: var(--primary);
     outline: none;
 }
-/* Practice Navigation Buttons */
+
+/* Practice navigation buttons in single line */
 .practice-nav{
   display:flex;
-  gap:10px;
   justify-content:center;
-  align-items:center;
+  gap:10px;
 }
 
-.practice-nav .btn-primary{
-  width:auto;        /* important */
+.practice-nav button{
+  width:auto !important;
+  flex:0 0 auto;
   padding:8px 16px;
 }
