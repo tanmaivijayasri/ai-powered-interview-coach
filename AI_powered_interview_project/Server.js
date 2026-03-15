@@ -741,6 +741,19 @@ Return STRICT JSON only:
             }
           }
         }
+        // 2. PRACTICE MODE QUESTION LIMIT CHECK
+
+        if(context.mode === "practice" && context.questionNumber >= context.questionLimit){
+    
+           socket.emit("chatResponse",{
+             reply: "✅ Practice session completed! You answered all questions.",
+             evaluation
+            });
+
+            return;
+        }
+
+
 
         // 2. Generate Next Question
         let contextData = "";
@@ -755,10 +768,11 @@ Return STRICT JSON only:
               `;
         } else {
           contextData = `
-            Job Role: ${user ? user.role : (context.skill || 'Software Engineer')}
+            Job Role: ${user ? user.role : 'Software Engineer'}
             Experience Level: ${user ? user.experienceLevel : 'Entry'}
-            Topic: ${context.skill || 'General Software Engineering'}
-            `;
+            Topic: ${context.topic || context.skill || 'General Software Engineering'}
+            Mode: ${context.mode}
+          `;
         }
 
         if (GeneratedQuestion) {
@@ -772,15 +786,30 @@ Return STRICT JSON only:
         }
 
         const nextQPrompt = `
+            const nextQPrompt = `
             Generate the next interview question.
-              Context: ${contextData}
-            Previous Interaction:
-            - User's Last Answer: "${message}"
-              - AI Feedback: ${JSON.stringify(evaluation)}
 
-            Constraint: Keep the question concise, professional, and entirely different from the PREVIOUSLY ASKED QUESTIONS.
-            Return JSON strictly: { "message": "string" }
-            `;
+            Mode: ${context.mode}
+
+            Context:
+            ${contextData}
+
+            Rules:
+            1. If mode = practice, ask short topic based questions.
+            2. If mode = interview, ask deep scenario based questions.
+            3. Focus on topic: ${context.topic || "software engineering"}.
+            4. Do not repeat previous questions.
+
+            Previous Interaction:
+            User Answer: "${message}"
+            AI Feedback: ${JSON.stringify(evaluation)}
+
+            Return strictly JSON:
+
+            {
+            "message": "next question"
+            }
+`           ;
         const nextQ = await callAI(nextQPrompt);
 
         // SAVE THE NEWLY GENERATED QUESTION

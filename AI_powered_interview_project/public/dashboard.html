@@ -216,7 +216,7 @@
           <ul id="anaSuggestions" style="list-style: none; margin-top: 1rem; color: #888;"></ul>
 
           <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-            <button class="btn-primary" onclick=" ('resume')">Start AI Mock Interview</button>
+            <button class="btn-primary" onclick="startInterview()">Start AI Mock Interview</button>
             <button onclick="document.getElementById('fileInput').click()"
               style="background: transparent; border: 1px solid #333; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Upload
               New</button>
@@ -255,6 +255,15 @@
         <div
           style="background: #111; padding: 1.5rem; border-radius: 16px; border: 1px solid #222; height: fit-content;">
           <h3 style="margin-bottom: 1.5rem;">Session Settings</h3>
+          <label style="display:block;margin-bottom:0.5rem;color:#888;font-size:0.9rem;">
+          Session Mode
+          </label>
+
+          <select id="sessionMode"
+          style="width:100%;padding:0.75rem;background:#000;border:1px solid #333;color:white;border-radius:8px;margin-bottom:1rem;">
+            <option value="interview">Interview Mode</option>
+            <option value="practice">Practice Mode</option>
+          </select>
 
           <label style="display: block; margin-bottom: 0.5rem; color: #888; font-size: 0.9rem;">Interview Focus</label>
           <select id="intMode"
@@ -296,6 +305,14 @@
               <span style="color: #D9FF00; font-size: 0.9rem; font-weight: 600;">⏱ <span
                   id="timerText">60</span>s</span>
             </div>
+          </div>
+
+          <!-- Practice Navigation -->
+          <div id="practiceNav" class="hidden" style="padding:1rem;border-bottom:1px solid #222;display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="prevPractice()" class="btn-primary">⬅ Previous</button>
+          <button onclick="nextPractice()" class="btn-primary">Next ➡</button>
+          <button onclick="jumpPractice()" class="btn-primary">Jump to Question</button>
+          
           </div>
 
           <div id="chatBox" class="chat-history">
@@ -1198,6 +1215,9 @@
     let timeTakenCounter = 0;
     let questionLimit = 5;
     let questionsAnswered = 0;
+    let practiceQuestions = [];
+    let practiceIndex = 0;
+    let sessionMode = "interview";
 
     document.getElementById("intMode").onchange = function () {
       document.getElementById("customSkillBox").classList.toggle("hidden", this.value === 'resume');
@@ -1231,19 +1251,115 @@
 
 
 
-    async function initSession() {
-      const mode = document.getElementById("intMode").value;
-      const skill = document.getElementById("customSkill").value;
+    async function initSession(){
 
-      questionLimit = parseInt(document.getElementById("questionCount").value) || 5;
-      questionsAnswered = 0;
+    sessionMode = document.getElementById("sessionMode").value;
 
-      document.getElementById("intStatus").innerText = "• Active";
-      document.getElementById("intStatus").style.color = "#D9FF00";
-      document.getElementById("chatBox").innerHTML = `<div class="msg ai">Starting ${mode} interview...</div>`;
+    const skill = document.getElementById("customSkill").value;
 
-      await sendMsg("Let's start the interview.", true);
+    questionLimit = parseInt(document.getElementById("questionCount").value) || 5;
+
+    questionsAnswered = 0;
+
+    document.getElementById("chatBox").innerHTML =
+      `<div class="msg ai">Starting ${sessionMode} session...</div>`;
+
+    if(sessionMode === "practice"){
+
+    document.getElementById("practiceNav").classList.remove("hidden");
+    if(sessionMode === "practice" && !skill){
+    showToast("Please enter a topic for practice mode.");
+    return;
     }
+
+    const res = await apiFetch(`${API}/generate-questions`,{
+    method:"POST",
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+    skill,
+     count: questionLimit
+    })
+    });
+    const data = await res.json();
+
+    practiceQuestions = data.questions || [];
+    practiceIndex = 0;
+    document.getElementById("chatBox").innerHTML = "";
+  
+    
+
+    showPracticeQuestion();
+
+    }
+    else{
+
+    document.getElementById("practiceNav").classList.add("hidden");
+
+    await sendMsg("Let's start the interview.", true);
+
+    }
+
+    }
+
+    function showPracticeQuestion(){
+
+    const box = document.getElementById("chatBox");
+
+    if(practiceQuestions.length === 0){
+
+    box.innerHTML += `<div class="msg ai">No questions generated</div>`;
+    return;
+
+    }
+
+    const q = practiceQuestions[practiceIndex];
+
+    box.innerHTML += `<div class="msg ai"><b>Q${practiceIndex+1}:</b> ${q}</div>`;
+
+    box.scrollTop = box.scrollHeight;
+
+    }
+
+    function nextPractice(){  
+
+    if(practiceIndex < practiceQuestions.length-1){
+
+    practiceIndex++;
+
+    showPracticeQuestion();
+
+    }
+
+    }
+
+    function prevPractice(){
+
+    if(practiceIndex > 0){
+
+    practiceIndex--;
+
+    showPracticeQuestion();
+
+    }
+
+    }
+
+    function jumpPractice(){
+
+    const num = prompt("Enter question number");
+
+    const index = parseInt(num)-1;
+
+    if(index >=0 && index < practiceQuestions.length){
+
+    practiceIndex = index;
+
+    showPracticeQuestion();
+
+    }
+
+    }
+    
 
     async function sendMsg(overrideText = null, isFirst = false, isTimeout = false) {
       if (typeof isRecording !== 'undefined' && isRecording) {
@@ -1251,6 +1367,23 @@
       }
       const input = document.getElementById("userInput");
       const text = isTimeout ? "[TIMEOUT]" : (overrideText || input.value.trim());
+      if(sessionMode === "practice"){
+        const box = document.getElementById("chatBox");
+
+        box.innerHTML += `<div class="msg user">${text}</div>`;
+
+        if(socket){
+          socket.emit("chatMessage", {
+          email,
+          message: text,
+          context: { practice: true },
+          question: practiceQuestions[practiceIndex]
+          });
+        }
+
+        input.value="";
+        return;
+      }
 
       const box = document.getElementById("chatBox");
       const mode = document.getElementById("intMode").value;
