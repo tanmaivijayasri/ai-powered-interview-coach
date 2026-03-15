@@ -787,7 +787,7 @@ Return STRICT JSON only:
 
         const nextQPrompt = `
             const nextQPrompt = `
-            Generate the next interview question.
+            //Generate the next interview question.
 
             Mode: ${context.mode}
 
