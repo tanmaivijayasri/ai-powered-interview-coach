@@ -853,16 +853,12 @@ input:focus, select:focus {
 /* Practice Navigation Buttons */
 .practice-nav{
   display:flex;
+  gap:10px;
   justify-content:center;
   align-items:center;
-  gap:12px;
-  padding:10px;
-  border-top:1px solid var(--border-color);
-  background: var(--card-bg);
 }
 
-.practice-nav button{
-  padding:6px 14px;
-  font-size:14px;
-  width:auto;
+.practice-nav .btn-primary{
+  width:auto;        /* important */
+  padding:8px 16px;
 }
