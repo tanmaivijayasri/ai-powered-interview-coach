@@ -307,13 +307,7 @@
             </div>
           </div>
 
-          <!-- Practice Navigation -->
-          <div id="practiceNav" class="hidden" style="padding:1rem;border-bottom:1px solid #222;display:flex;gap:10px;flex-wrap:wrap;">
-          <button onclick="prevPractice()" class="btn-primary">⬅ Previous</button>
-          <button onclick="nextPractice()" class="btn-primary">Next ➡</button>
-          <button onclick="jumpPractice()" class="btn-primary">Jump to Question</button>
           
-          </div>
 
           <div id="chatBox" class="chat-history">
             <div class="msg ai">
@@ -326,6 +320,13 @@
             <textarea id="userInput" class="chat-input" placeholder="Type your answer here..." rows="1"
               onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault(); sendMsg();}"></textarea>
             <button class="send-btn" onclick="sendMsg()"><i class="fa-regular fa-paper-plane"></i></button>
+          </div>
+          <!-- Practice Navigation -->
+          <div id="practiceNav" class="hidden" style="padding:1rem;border-bottom:1px solid #222;display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="prevPractice()" class="btn-primary">⬅ Previous</button>
+          <button onclick="nextPractice()" class="btn-primary">Next ➡</button>
+          <button onclick="jumpPractice()" class="btn-primary">Jump to Question</button>
+          
           </div>
         </div>
       </div>
