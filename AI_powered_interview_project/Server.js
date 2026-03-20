@@ -459,7 +459,10 @@ Return strictly a JSON object with a "questions" array containing 5 strings.
   "questions": ["q1", "q2", "q3", "q4", "q5"]
 }`;
 
-    const aiRes = await callAI(prompt);
+   const aiRes = await callAI(
+  prompt,
+  "System: You are a strict report generator. Never ask questions. Only return structured output."
+);
     res.json({ success: true, questions: aiRes.questions || [] });
   } catch (error) {
     console.error("Generate Questions Error:", error);
@@ -511,6 +514,15 @@ Return strictly a JSON object:
 app.get("/user-dashboard/:email", verifyToken, async (req, res) => {
   try {
     const { email } = req.params;
+    // ===== GET HR SCORE =====
+const hrFile = "./data/hrScores.json";
+
+let hrScore = 0;
+
+if (fs.existsSync(hrFile)) {
+  const hrData = JSON.parse(fs.readFileSync(hrFile));
+  hrScore = hrData[email] || 0;
+}
 
     // Fetch user for gamification stats
     const user = User ? await User.findOne({ email }) : null;
@@ -583,7 +595,8 @@ app.get("/user-dashboard/:email", verifyToken, async (req, res) => {
         skills: [skillCounts.Technical, skillCounts.Behavioral, skillCounts.SystemDesign],
         trendLabels,
         trendData
-      }
+      },
+      hrScore
     });
 
   } catch (e) {
@@ -838,6 +851,241 @@ Return STRICT JSON only:
     });
   });
 }
+// your existing routes above...
 
+app.post("/api/analyze-performance", async (req, res) => {
+  try {
+    const { stats, resume, charts } = req.body;
+
+    // ✅ REPLACE ONLY THIS PROMPT
+    const prompt = `
+You are NOT a chatbot.
+
+You are a professional career advisor generating a REPORT.
+
+DO NOT ask questions.
+DO NOT behave like interviewer.
+DO NOT respond conversationally.
+
+ONLY generate a structured report.
+
+User Data:
+- Average Score: ${stats?.avgScore || 0}/10
+- Total Questions: ${stats?.totalQuestions || 0}
+- Resume Score: ${resume?.score || 0}
+
+OUTPUT FORMAT (STRICT):
+
+ Recommended Skills:
+- skill 1
+- skill 2
+- skill 3
+
+
+Courses:
+- Course 1 (Platform)
+- Course 2 (Platform)
+
+
+Roadmap:
+1. Step one
+2. Step two
+3. Step three
+4. Step four
+
+💡 Tips:
+- tip 1
+- tip 2
+
+
+🚀 Motivation:
+One line motivation
+
+IMPORTANT:
+- No questions
+- No conversation
+- Only structured output
+`;
+
+    // ✅ KEEP THIS SAME
+     const aiRes = await callAI(
+  "REPORT MODE: " + prompt,
+  "System: You are a career coach. Do NOT evaluate answers. Do NOT ask questions. Only generate structured reports."
+);
+
+    const formatted = aiRes.text || aiRes.message || "No suggestions generated.";
+
+    res.json({
+      suggestions: formatted
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      suggestions: "Error generating suggestions."
+    });
+  }
+});
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Backend working" });
+});
+//===========GENERATE HR QUESTIONS=========
+app.post("/api/hr/generate", async (req, res) => {
+  try {
+    const { role, count } = req.body;
+
+    let questions = [];
+
+    try {
+      // 🔥 STRONG PROMPT
+      const prompt = `
+You are an expert HR interviewer.
+
+Generate ${count} high-quality HR interview questions for the role: ${role}.
+
+Rules:
+- Questions should be realistic and commonly asked
+- Mix behavioral + situational + personal questions
+- Avoid repetition
+- Keep them clear and professional
+
+Return ONLY a JSON array:
+["Question 1", "Question 2", ...]
+`;
+
+      const aiRes = await callAI(prompt);
+
+      if (!aiRes || !Array.isArray(aiRes)) {
+        throw new Error("Invalid AI response");
+      }
+
+      questions = aiRes;
+
+    } catch (err) {
+      console.log("⚠️ Gemini failed → fallback", err.message);
+
+      // ✅ SMART FALLBACK (ROLE BASED)
+      const base = [
+        `Tell me about yourself as a ${role}.`,
+        `Why are you interested in the ${role} role?`,
+        `What are your key strengths for this position?`,
+        `What is one weakness you are working on?`,
+        `Describe a challenging situation and how you handled it.`,
+        `Tell me about a time you worked in a team.`,
+        `How do you handle pressure or tight deadlines?`,
+        `Where do you see yourself in 5 years?`,
+        `Why should we hire you for ${role}?`,
+        `What motivates you in your career?`
+      ];
+
+      // add slight variation for realism
+      questions = base
+        .sort(() => 0.5 - Math.random())
+        .slice(0, count);
+    }
+
+    res.json({
+      success: true,
+      questions
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false });
+  }
+});
+// ================= EVALUATE HR ANSWER =================
+app.post("/api/hr/evaluate", async (req, res) => {
+  try {
+    const { question, answer } = req.body;
+
+    let score, feedback;
+
+    try {
+      // 🔥 STRONG EVALUATION PROMPT
+      const prompt = `
+You are an HR interviewer.
+
+Evaluate the candidate’s answer.
+
+Question: ${question}
+Answer: ${answer}
+
+Evaluation criteria:
+- Clarity
+- Confidence
+- Relevance
+- Communication
+- Structure
+
+Give:
+1. Score out of 10
+2. Short constructive feedback (1–2 lines)
+
+Return ONLY JSON:
+{
+  "score": number,
+  "feedback": "text"
+}
+`;
+
+      const aiRes = await callAI(prompt);
+
+      if (!aiRes || aiRes.score === undefined) {
+        throw new Error("Invalid AI response");
+      }
+
+      score = aiRes.score;
+      feedback = aiRes.feedback;
+
+    } catch (err) {
+      console.log("⚠️ Gemini failed → fallback evaluation", err.message);
+
+      // ✅ SMART FALLBACK LOGIC
+      const len = answer.trim().length;
+
+      if (len > 180) {
+        score = 9;
+        feedback = "Excellent answer with strong clarity and depth.";
+      } else if (len > 100) {
+        score = 7;
+        feedback = "Good answer, but could include more examples.";
+      } else if (len > 50) {
+        score = 5;
+        feedback = "Average answer. Try to elaborate more clearly.";
+      } else {
+        score = 3;
+        feedback = "Too brief. Add more explanation and detail.";
+      }
+    }
+
+    res.json({
+      success: true,
+      score,
+      feedback
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false });
+  }
+});
+// SAVE HR AVG SCORE
+app.post("/save-hr-score", (req, res) => {
+  const { email, score } = req.body;
+
+  const filePath = "./data/hrScores.json";
+
+  let data = {};
+
+  if (fs.existsSync(filePath)) {
+    data = JSON.parse(fs.readFileSync(filePath));
+  }
+
+  data[email] = score; // store latest avg
+
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+
+  res.json({ success: true });
+});
 // Start Server
 server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
