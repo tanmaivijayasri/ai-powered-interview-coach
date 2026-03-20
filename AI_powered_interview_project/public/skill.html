@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Skill Suggestions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="drawer_styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+</body>
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <div class="logo-icon"><i class="fa-solid fa-brain"></i></div>
+      <span class="logo-text">InterviewCoach</span>
+    </div>
+
+    <nav class="nav-links">
+
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=dashboard'">
+        <i class="fa-solid fa-table-columns"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=resume'">
+        <i class="fa-solid fa-file-contract"></i>
+        <span>Resume Analyzer</span>
+      </a>
+
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=interview'">
+        <i class="fa-solid fa-comments"></i>
+        <span>Mock Interview</span>
+      </a>
+
+      <a class="nav-item" onclick="window.location.href='hr.html'">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>HR Interview</span>
+      </a>
+
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=generator'">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Question Generator</span>
+      </a>
+
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=personality'">
+        <i class="fa-solid fa-face-smile"></i>
+        <span>Personality Analyzer</span>
+      </a>
+
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=analytics'">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Performance</span>
+      </a>
+
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=settings'">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+
+      <!-- ACTIVE -->
+      <a class="nav-item active">
+        <i class="fa-solid fa-rocket"></i>
+        <span>AI Skill Suggestions</span>
+      </a>
+
+    </nav>
+
+    <button onclick="window.location.href='index.html'" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span>Logout</span>
+    </button>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- HEADER -->
+    <header class="top-header">
+      <div>
+        <h1 class="page-title">AI Skill Suggestions</h1>
+        <p class="welcome-text">Personalized roadmap powered by AI 🚀</p>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="main-container">
+
+      <!-- Score -->
+      <div id="scoreBox" class="score-box">
+        Loading score...
+      </div>
+
+      <!-- Sections -->
+      <div class="ai-clean">
+
+        <div class="ai-section">
+          <h2>Recommended Skills</h2>
+          <div id="skills"></div>
+        </div>
+
+        <div class="ai-section">
+          <h2>Courses</h2>
+          <div id="courses"></div>
+        </div>
+
+        <div class="ai-section">
+          <h2>Roadmap</h2>
+          <div id="roadmap"></div>
+        </div>
+
+        <div class="ai-section">
+          <h2>Tips</h2>
+          <div id="tips"></div>
+        </div>
+
+        <div class="ai-section">
+          <h2>Motivation</h2>
+          <div id="motivation"></div>
+        </div>
+
+      </div>
+
+      <!-- Back -->
+      <div class="back-btn-box">
+        <button onclick="goBack()" class="btn-primary">
+          ⬅ Back to Dashboard
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- JS -->
+  <script src="skill.js"></script>
+
+</body >
+</html>

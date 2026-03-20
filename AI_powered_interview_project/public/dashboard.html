@@ -42,6 +42,10 @@
         <i class="fa-solid fa-comments"></i>
         <span>Mock Interview</span>
       </a>
+     <a class="nav-item" onclick="window.location.href='hr.html'">
+  <i class="fa-solid fa-user-tie"></i>
+  <span>HR Interview</span>
+</a>
 
       <a class="nav-item" onclick="showView('generator')">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -61,7 +65,8 @@
         <i class="fa-solid fa-gear"></i>
         <span>Settings</span>
       </a>
-    </nav>
+
+
 
     <!-- PRO PLAN REMOVED per user request -->
 
@@ -115,6 +120,9 @@
               <span class="stat-label">Resume Score</span>
               <span class="stat-value" id="resumeScore">--%</span>
             </div>
+            <div style="margin-top: 20px; text-align: center;">
+  
+</div>
           </div>
 
           <!-- Card 2: Questions Solved -->
@@ -160,8 +168,25 @@
               <span class="stat-value" id="practiceStreak">0 Days</span>
             </div>
           </div>
+          <div class="stat-card">
+  <div class="stat-icon-box" style="background: rgba(0, 255, 200, 0.15); color: #00FFC8;">
+    <i class="fa-solid fa-user-tie"></i>
+  </div>
+  <div class="stat-details">
+    <span class="stat-label">HR Performance</span>
+    <span class="stat-value" id="hrScore">--/10</span>
+  </div>
+</div>
         </div>
-
+       <div class="stat-card" onclick="goToSkillPage()" style="cursor:pointer;">
+  <div class="stat-icon-box" style="background: rgba(217, 255, 0, 0.15); color: #D9FF00;">
+    <i class="fa-solid fa-rocket"></i>
+  </div>
+  <div class="stat-details">
+    <span class="stat-label">AI Skill Suggestions</span>
+    <span class="stat-value">View</span>
+  </div>
+</div>
         <!-- Charts Grid (2:1 Ratio like Reference) -->
         <div class="charts-grid">
           <div class="chart-box">
@@ -371,6 +396,73 @@
       </div>
     </section>
 
+  
+
+<script>
+  function goToHR() {
+  
+    
+  }
+</script>
+<!-- HR INTERVIEW VIEW -->
+<section id="hr-view" class="view-section hidden">
+
+  <div style="display: grid; grid-template-columns: 300px 1fr; gap: 1.5rem;">
+
+    <!-- LEFT PANEL (like mock interview) -->
+    <div style="background:#111; padding:1.5rem; border-radius:16px; border:1px solid #222; height:fit-content;">
+
+      <h3 style="margin-bottom:1.5rem;">HR Settings</h3>
+
+      <label style="color:#888;">Select Job Role</label>
+      <select id="hrRole" style="width:100%; padding:0.75rem; margin-top:8px; margin-bottom:1rem; background:#000; border:1px solid #333; color:white; border-radius:8px;">
+        <option value="Software Engineer">Software Engineer</option>
+        <option value="Frontend Developer">Frontend Developer</option>
+        <option value="Backend Developer">Backend Developer</option>
+        <option value="Full Stack Developer">Full Stack Developer</option>
+        <option value="Data Analyst">Data Analyst</option>
+        <option value="Data Scientist">Data Scientist</option>
+        <option value="Product Manager">Product Manager</option>
+        <option value="UI/UX Designer">UI/UX Designer</option>
+      </select>
+
+      <button class="btn-primary" style="width:100%;" onclick="startHRInterview()">
+        Start Interview
+      </button>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div style="background:#111; padding:1.5rem; border-radius:16px; border:1px solid #222;">
+
+      <div id="hrSection" style="display:none;">
+        <h3 id="hrQuestion"></h3>
+
+        <textarea id="hrAnswer" class="hr-textarea" placeholder="Write your answer..."></textarea>
+
+        <button class="btn-primary" onclick="submitHRAnswer()">Submit</button>
+
+        <p id="hrFeedback"></p>
+
+        <button id="nextBtn" class="btn-primary" onclick="nextHRQuestion()">
+          Next Question
+        </button>
+      </div>
+
+      <div id="hrResult" style="display:none; text-align:center;">
+        <h2 style="color:#D9FF00;">🎉 Interview Completed</h2>
+        <p id="finalScore"></p>
+
+        <button class="btn-primary" onclick="restartHRInterview()">
+          Start Again
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
     <!-- 3B. PERSONALITY ANALYZER VIEW -->
     <section id="personality-view" class="view-section hidden">
       <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
@@ -771,7 +863,8 @@
         'resume': 'Resume Analysis',
         'interview': 'Mock Interview',
         'analytics': 'Performance History',
-        'settings': 'Settings & Profile'
+        'settings': 'Settings & Profile',
+        'hr': 'HR Interview'
       };
       document.getElementById("pageTitle").innerText = titles[viewId];
 
@@ -787,6 +880,7 @@
       if (viewId === 'resume') loadResumeHistory();
       if (viewId === 'analytics') loadHistory();
       if (viewId === 'settings') loadSettings();
+      if (viewId === 'hr') loadHRRole();
     }
 
     /* --- SETTINGS & PROFILE LOGIC --- */
@@ -882,6 +976,19 @@
 
           document.getElementById("totalQs").innerText = data.stats.totalQuestions;
           document.getElementById("avgScore").innerText = data.stats.avgScore !== 0 ? data.stats.avgScore + "/10" : "--";
+          document.getElementById("totalQs").innerText = data.stats.totalQuestions;
+document.getElementById("avgScore").innerText = data.stats.avgScore !== 0 
+  ? data.stats.avgScore + "/10" 
+  : "--";
+
+/* ✅ ADD HERE */
+const hr = localStorage.getItem("hrAvgScore");
+
+if (hr) {
+  document.getElementById("hrScore").innerText = hr + "/10";
+} else {
+  document.getElementById("hrScore").innerText = "--/10";
+}
 
           // Update Practice Time (Check if element exists first)
           const timeEl = document.getElementById("practiceTime");
@@ -1619,6 +1726,7 @@
       // Reset input tracking after stopping? Not strictly necessary unless we want to "freeze" it.
     }
 
+
     // Init Page
     loadDashboardData();
     function startSpeech(index) {
@@ -1649,7 +1757,35 @@
       };
 
     }
+    function loadHRRole() {
+  const savedRole = localStorage.getItem("userRole");
 
+  if (savedRole) {
+    document.getElementById("hrRole").value = savedRole;
+  }
+}
+
+async function goToSkillPage() {
+  try {
+    const res = await apiFetch(`${API}/user-dashboard/${email}`);
+    const data = await res.json();
+
+    // Store dashboard data for skill page
+    localStorage.setItem("dashboardData", JSON.stringify(data));
+
+    // Navigate to skill page
+    window.location.href = "skill.html";
+
+  } catch (error) {
+    showToast("Failed to load dashboard data");
+  }
+}
+const params = new URLSearchParams(window.location.search);
+const view = params.get("view");
+
+if (view) {
+  showView(view);
+}
   </script>
   </script>
 </body>

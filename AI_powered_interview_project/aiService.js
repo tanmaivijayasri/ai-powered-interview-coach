@@ -13,6 +13,37 @@ const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
  */
 function getSmartMockResponse(prompt) {
     const p = prompt.toLowerCase();
+    // --- MODE: AI SKILL SUGGESTION REPORT ---
+if (p.includes("report mode")) {
+    return {
+        text: `
+Recommended Skills:
+- Data Structures & Algorithms
+- Backend Development (Node.js)
+- Database Design (SQL)
+
+
+Courses:
+- Data Structures & Algorithms (Coursera)
+- Backend Development with Node.js (Udemy)
+- SQL for Beginners (YouTube)
+
+Roadmap:
+1. Strengthen DSA fundamentals
+2. Learn backend development (Node.js/Express)
+3. Practice building REST APIs
+4. Learn databases and system design
+
+💡 Tips:
+- Practice coding daily
+- Build real-world projects
+
+
+Motivation:
+Consistency beats talent. Keep improving every day!
+`
+    };
+}
 
     // --- MODE 1: RESUME ANALYSIS (Server asking to analyze resume) ---
     if (p.includes("analysis of this resume") || p.includes("analyze this resume")) {
@@ -335,7 +366,7 @@ async function callAI(userPrompt, systemMsg = "You are an expert technical inter
     }
 
     // 2. Try Real API
-    const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-2.0-flash"];
 
     for (const modelName of modelsToTry) {
         try {

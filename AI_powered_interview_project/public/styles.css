@@ -863,3 +863,188 @@ input:focus, select:focus {
   flex:0 0 auto;
   padding:8px 16px;
 }
+.hr-container {
+  max-width: 800px;
+  margin: 50px 0 0 80px;
+  padding: 20px;
+}
+.hr-btn {
+  width: 300px;            /* bigger width */
+  padding: 16px 0;         /* taller button */
+  font-size: 16px;         /* bigger text */
+
+  border-radius: 12px;
+
+  display: block;
+  margin: 25px auto;       /* center it */
+
+  font-weight: 600;
+}
+.hr-label {
+  color: #aaa;   /* light gray */
+  font-size: 14px;
+}
+.hr-textarea {
+  width: 100%;
+  background: #000;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.hr-textarea::placeholder {
+  color: #777;
+}
+/* Right align container */
+.next-btn-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Small button */
+.next-btn {
+  width: auto !important;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+#nextBtn {
+  margin-left: auto !important;
+  display: block;
+}
+#nextBtn {
+  margin: 25px 0 0 auto !important;   /* pushes to right */
+  display: block;
+}
+#nextBtn {
+  margin: 15px 0 0 auto !important;
+}
+.job-label {
+  color: #aaa;   /* grey color */
+  font-size: 14px;
+}
+.job-label {
+  color: #aaa;   /* grey color */
+  font-size: 14px;
+}
+/* ===== AI SKILL SUGGESTION CLEAN UI (NO BODY CLASS NEEDED) ===== */
+
+/* Container */
+.main-container {
+  max-width: 750px;
+  margin: 30px 0 0 40px;
+  padding: 20px;
+}
+
+/* Title */
+.page-title {
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* Subtitle */
+.welcome-text {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+/* Score */
+.score-box {
+  font-size: 15px;
+  color: #aaa;
+  margin-bottom: 25px;
+}
+
+/* Sections layout */
+.ai-clean {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* Each section */
+.ai-section {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+/* Section headings */
+.ai-section h2 {
+  color: #D9FF00;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Content */
+.ai-section div {
+  color: #ccc;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+/* List spacing (if used) */
+.ai-section li {
+  margin-bottom: 6px;
+}
+
+/* Back button container */
+.back-btn-box {
+  margin-top: 30px;
+  text-align: left;
+}
+
+/* Small button */
+.back-btn-box .btn-primary {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.input-box {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: #111;
+  color: white;
+  border: 1px solid #333;
+  margin-bottom: 15px;
+}
+/* ===== FORCE FIX LOGOUT BUTTON (HR PAGE) ===== */
+
+.sidebar .logout-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #ff4444 !important;
+  font-size: 15px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 20px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+/* Remove any white background from button */
+.sidebar .logout-btn,
+.sidebar .logout-btn:focus,
+.sidebar .logout-btn:active {
+  background: transparent !important;
+  outline: none !important;
+}
+
+/* Icon color */
+.sidebar .logout-btn i {
+  color: #ff4444 !important;
+}
+
+/* Hover */
+.sidebar .logout-btn:hover {
+  background: rgba(255, 68, 68, 0.1) !important;
+  border-radius: 8px;
+}
