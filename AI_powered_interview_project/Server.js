@@ -409,7 +409,252 @@ if (multer) {
       res.status(400).json({ success: false, message: error.message || "Upload failed. Please ensure the file is valid." });
     }
   });
+
+  app.post("/api/resume/analyze", verifyToken, upload.single("resume"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ message: "No file uploaded." });
+
+      const text = await extractResumeText(file.path, file.mimetype);
+      const textUpper = text.toUpperCase();
+
+      // 1. Skill Extraction
+      const predefinedSkills = ["Java", "Python", "SQL", "React", "Machine Learning", "DSA", "OOP"];
+      const skillsFound = predefinedSkills.filter(skill => textUpper.includes(skill.toUpperCase()));
+      const missingSkills = predefinedSkills.filter(skill => !textUpper.includes(skill.toUpperCase()));
+
+      let score = 0;
+      let suggestions = [];
+
+      // 2. Resume Score
+      if (skillsFound.length > 0) {
+        score += Math.min(40, Math.floor((skillsFound.length / predefinedSkills.length) * 40));
+      }
+      if (skillsFound.length < 1) {
+        suggestions.push("Improve your technical skills significantly. Consider adding languages and frameworks.");
+      } else if (skillsFound.length < 3) {
+        suggestions.push("Broaden your skill set to meet required capabilities.");
+      }
+
+      const hasProjects = textUpper.includes("PROJECT");
+      if (hasProjects) {
+        score += 20;
+      } else {
+        suggestions.push("Consider adding a 'Projects' section to showcase your practical experience.");
+      }
+
+      const hasExperience = textUpper.includes("EXPERIENCE") || textUpper.includes("INTERNSHIP");
+      if (hasExperience) {
+        score += 20;
+      } else {
+        suggestions.push("Consider adding internships or work experience. If lacking, focus more on projects.");
+      }
+
+      if (text.length > 500 && textUpper.includes("EDUCATION")) {
+        score += 20;
+      } else {
+        suggestions.push("Formatting could be improved. Ensure a decent length and clear 'Education' section.");
+      }
+
+      // Feature 2 Role mapping
+      let suggestedRole = "Software Engineer";
+      if (skillsFound.includes("Python") && skillsFound.includes("Machine Learning")) {
+        suggestedRole = "Data Scientist";
+      } else if (skillsFound.includes("Java") && skillsFound.includes("DSA")) {
+        suggestedRole = "Software Engineer";
+      } else if (textUpper.includes("COMMUNICATION") || textUpper.includes("HR") || textUpper.includes("HUMAN RESOURCES")) {
+        suggestedRole = "HR";
+      }
+
+      res.json({
+        score: Math.min(score, 100),
+        skillsFound,
+        missingSkills,
+        suggestedRole,
+        suggestions
+      });
+    } catch (error) {
+      console.error("❌ Smart Resume Analyze Error:", error.message);
+      res.status(400).json({ success: false, message: error.message || "Analyze failed." });
+    }
+  });
+
+  app.post("/api/resume/analyze-smart", verifyToken, upload.single("resume"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ success: false, error: "No file uploaded. Please upload a proper resume." });
+
+      const text = await extractResumeText(file.path, file.mimetype);
+
+      if (!text || text.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Unable to read resume content"
+        });
+      }
+
+      console.log("Resume text length:", text.length);
+
+      const textUpper = text.toUpperCase();
+      const lowerText = text.toLowerCase();
+
+      // STEP 1: FILE VALIDATION
+      const hasEducation = lowerText.includes("education");
+      const hasSkills = lowerText.includes("skill");
+      const hasExperienceValidation = lowerText.includes("experience") || lowerText.includes("project") || lowerText.includes("internship");
+
+      const isResume = hasEducation || hasSkills || hasExperienceValidation;
+
+      if (!isResume) {
+        console.log("❌ Non-resume file detected. Skipping detailed logging.");
+        return res.status(400).json({
+          success: false,
+          error: "This file is not a valid resume. Please upload a proper resume."
+        });
+      }
+
+      console.log("✅ Resume processed successfully");
+
+      // 1. Skill Extraction
+      const skillMap = {
+        "JavaScript": ["javascript", "js"],
+        "HTML/CSS": ["html", "css"],
+        "Node.js": ["node", "nodejs"],
+        "React": ["react"],
+        "Python": ["python"],
+        "Java": ["java"],
+        "SQL": ["sql"],
+        "Machine Learning": ["machine learning", "ml"],
+        "Problem Solving": ["problem solving", "dsa", "algorithms"]
+      };
+
+      let skillsFound = [];
+      for (let skill in skillMap) {
+        if (skillMap[skill].some(k => lowerText.includes(k))) {
+          skillsFound.push(skill);
+        }
+      }
+
+      // 2. Score Calculation
+      let score = 0;
+      if (skillsFound.length >= 5) score += 40;
+      else if (skillsFound.length >= 3) score += 25;
+      else score += 10;
+
+      if (lowerText.includes("project")) score += 20;
+      if (lowerText.includes("experience")) score += 20;
+      if (lowerText.includes("education")) score += 20;
+
+      score = Math.min(score, 100);
+
+      // 3. Level Detection
+      let level = "Beginner";
+      if (score >= 75) level = "Intermediate";
+      if (score >= 90) level = "Advanced";
+
+      // 4. AI Summary
+      let summary = "";
+      if (level === "Beginner") {
+        summary = "The candidate is at an early stage with foundational knowledge and needs more hands-on experience.";
+      } else if (level === "Intermediate") {
+        summary = "The candidate has a solid understanding of core concepts and some practical experience.";
+      } else {
+        summary = "The candidate demonstrates strong expertise and is ready for advanced roles.";
+      }
+
+      // 5. Improvement Roadmap
+      let roadmap = [];
+      if (!lowerText.includes("project")) {
+        roadmap.push("Add 2-3 strong projects to showcase your skills.");
+      }
+      if (!lowerText.includes("experience")) {
+        roadmap.push("Gain internship or practical experience.");
+      }
+      if (skillsFound.length < 4) {
+        roadmap.push("Improve technical skills relevant to your domain.");
+      }
+      roadmap.push("Work on problem-solving and system design.");
+      roadmap.push("Add measurable achievements in your resume.");
+
+      // 6. Job Roles Match Calculation
+      const jobRoles = {
+        "Software Engineer": ["javascript", "java", "dsa", "react", "node", "sql"],
+        "Data Scientist": ["python", "machine learning", "statistics", "pandas"],
+        "Frontend Developer": ["html", "css", "javascript", "react"],
+        "Backend Developer": ["node", "api", "database", "sql"]
+      };
+
+      function calculateMatch(resumeText, skills) {
+        let matchCount = 0;
+        skills.forEach(skill => {
+          if (resumeText.includes(skill)) {
+            matchCount++;
+          }
+        });
+        return Math.round((matchCount / skills.length) * 100);
+      }
+
+      let jobMatch = [];
+      for (let role in jobRoles) {
+        const match = calculateMatch(lowerText, jobRoles[role]);
+        jobMatch.push({ role, match });
+      }
+
+      let bestRole = jobMatch.sort((a, b) => b.match - a.match)[0];
+
+      console.log("Detected skills:", skillsFound);
+
+      return res.json({
+        success: true,
+        score,
+        level,
+        skillsFound,
+        summary,
+        roadmap,
+        jobMatch,
+        bestRole
+      });
+    } catch (error) {
+      console.error("Resume Analysis Error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Resume processing failed"
+      });
+    }
+  });
 }
+
+app.get("/api/job-roles", verifyToken, (req, res) => {
+  const roles = {
+    Categories: {
+      "Software Development": {
+        "Software Engineer": ["OOP", "DSA", "System Design"],
+        "Frontend Developer": ["React", "JavaScript", "CSS"],
+        "Backend Developer": ["Node.js", "Java", "SQL"],
+        "Full Stack Developer": ["React", "Node.js", "System Design"]
+      },
+      "Data Science": {
+        "Data Scientist": ["ML", "Statistics", "Python"],
+        "Data Analyst": ["SQL", "Excel", "Data Visualization"]
+      },
+      "AI/ML": {
+        "Machine Learning Engineer": ["Deep Learning", "Python", "MLOps"],
+        "AI Engineer": ["NLP", "Computer Vision", "TensorFlow"]
+      },
+      "Cybersecurity": {
+        "Security Analyst": ["Network Security", "Cryptography"],
+        "Penetration Tester": ["Ethical Hacking", "Kali Linux"]
+      },
+      "HR": {
+        "HR": ["Behavioral", "Culture Fit", "Communication"]
+      },
+      "Marketing": {
+        "Digital Marketer": ["SEO", "Content Strategy", "Analytics"]
+      }
+    }
+  };
+  res.json(roles);
+});
 
 /* --- NEW FEATURES: Question Generator & Personality Analyzer --- */
 
@@ -1087,5 +1332,21 @@ app.post("/save-hr-score", (req, res) => {
 
   res.json({ success: true });
 });
+// ================= GLOBAL ERROR HANDLING =================
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    error: "API Route not found"
+  });
+});
+
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err);
+  res.status(500).json({
+    success: false,
+    error: "Server error"
+  });
+});
+
 // Start Server
 server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
