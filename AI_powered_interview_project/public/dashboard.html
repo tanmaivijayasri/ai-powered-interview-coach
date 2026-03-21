@@ -210,41 +210,64 @@
 
     <!-- 2. RESUME VIEW -->
     <section id="resume-view" class="view-section hidden">
-      <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #444; margin-bottom: 1rem;"></i>
-        <h3>Upload your Resume</h3>
-        <p style="color: #666; margin-bottom: 2rem;">Supports PDF & DOCX (Max 10MB)</p>
-        <button class="btn-primary">Select File</button>
-        <input type="file" id="fileInput" hidden onchange="handleFile(this.files)">
-      </div>
+      <div id="unifiedUploadUI" style="max-width: 900px; margin: 0 auto;">
+        
+        <!-- Error Message Box -->
+        <div id="unifiedErrorBox" style="display: none; background: rgba(255, 68, 68, 0.1); border: 1px solid #FF4444; color: #FF4444; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
+          <i class="fa-solid fa-circle-exclamation"></i> <span id="unifiedErrorText"></span>
+        </div>
 
-      <div id="analysisLoading" class="hidden" style="text-align: center; margin-top: 3rem;">
-        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
-        <p style="margin-top: 1rem;">AI is analyzing your profile...</p>
-      </div>
+        <div class="upload-zone" id="unifiedDropZone" onclick="document.getElementById('unifiedFileInput').click()" style="cursor: pointer; text-align: center; border: 2px dashed #444; border-radius: 12px; padding: 3rem; background: #111; transition: 0.3s;">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #444; margin-bottom: 1rem;"></i>
+          <h3>Drag & Drop or Upload your Resume</h3>
+          <p style="color: #666; margin-bottom: 1rem;">Supports PDF & DOCX</p>
+          <p id="unifiedFileNameDisplay" style="color: #00FF94; font-weight: bold; margin-bottom: 1rem;"></p>
+          <input type="file" id="unifiedFileInput" accept=".pdf,.docx" hidden onchange="handleUnifiedFile(this.files)">
+          <button class="btn-primary" onclick="event.stopPropagation(); document.getElementById('unifiedFileInput').click();">Select File</button>
+        </div>
+        
+        <button class="btn-primary" onclick="analyzeUnifiedResume()" id="unifiedAnalyzeBtn" style="width: 100%; margin-top: 1.5rem; display: none;">
+          Analyze Resume
+        </button>
 
-      <div id="analysisResult" class="hidden" style="margin-top: 2rem;">
-        <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div>
-              <h2 id="anaLevel" style="color: var(--primary);">Level: --</h2>
-              <p id="anaSummary" style="margin: 1rem 0; color: #ccc; max-width: 600px;"></p>
-              <div id="anaSkills"></div>
+        <div id="unifiedAnalysisLoading" class="hidden" style="text-align: center; margin-top: 3rem; display: none;">
+          <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: #00FF94;"></i>
+          <p style="margin-top: 1rem; color: #ccc;">AI is analyzing your profile...</p>
+        </div>
+
+        <!-- RESULTS SECTION -->
+        <div id="unifiedAnalysisResult" class="hidden" style="margin-top: 2rem; display: none;">
+          <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+              <div style="flex: 1;">
+                <h2 style="color: #00FF94; margin-bottom: 0.5rem;">Level: <span id="unifiedLevel" style="color: white;"></span></h2>
+                
+                <p id="unifiedSummary" style="color: #ccc; font-style: italic;"></p>
+                
+                <div style="margin-top: 1.5rem;">
+                  <h4 style="color: #888;">Skills Found</h4>
+                  <div id="unifiedSkillsFound" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;"></div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                  <h4 style="color: #00FF94; font-size: 1.1rem; margin-bottom: 0.5rem;" id="unifiedBestMatchLabel">Best Match: --</h4>
+                  <div id="unifiedJobMatches" style="display: flex; flex-direction: column; gap: 0.5rem; color: #ccc;"></div>
+                </div>
+              </div>
+              
+              <div style="text-align: right; background: #1a1a1a; padding: 1.5rem; border-radius: 12px; min-width: 150px; border: 1px solid #333;">
+                <div id="unifiedResumeScore" style="font-size: 3.5rem; font-weight: 800; color: #00FF94;">0</div>
+                <span style="color: #666; font-size: 0.85rem; font-weight: bold;">JOB MATCH</span>
+              </div>
             </div>
-            <div style="text-align: right;">
-              <div id="anaScore" style="font-size: 4rem; font-weight: 800; color: var(--primary);">0</div>
-              <span style="color: #666;">MARKET READINESS</span>
+
+            <h3 style="margin-top: 2rem; border-top: 1px solid #222; padding-top: 1.5rem; color: white;">Improvement Roadmap</h3>
+            <ul id="unifiedRoadmap" style="list-style: disk; margin-top: 1rem; color: #ccc; margin-left: 1.5rem; line-height: 1.6;"></ul>
+            
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+              <button class="btn-primary" onclick="showView('interview')">Start AI Mock Interview</button>
+              <button onclick="document.getElementById('unifiedFileInput').click()" style="background: transparent; border: 1px solid #333; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; transition: 0.3s;">Upload New</button>
             </div>
-          </div>
-
-          <h3 style="margin-top: 2rem; border-top: 1px solid #222; padding-top: 1rem;">Improvement Roadmap</h3>
-          <ul id="anaSuggestions" style="list-style: none; margin-top: 1rem; color: #888;"></ul>
-
-          <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-            <button class="btn-primary" onclick="startInterview()">Start AI Mock Interview</button>
-            <button onclick="document.getElementById('fileInput').click()"
-              style="background: transparent; border: 1px solid #333; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Upload
-              New</button>
           </div>
         </div>
       </div>
@@ -1818,6 +1841,11 @@ const view = params.get("view");
 if (view) {
   showView(view);
 }
+<<<<<<< HEAD
+  </script>
+  <script src="roles.js"></script>
+  <script src="unified-resume.js"></script>
+=======
   function endPracticeSession(){
   const feedbackKeys = Object.keys(practiceFeedbacks);
 
@@ -1875,6 +1903,7 @@ function resetPracticeSession(){
   document.getElementById("chatBox").innerHTML = `<div class="msg ai">Select your settings and click Start Session to begin! 🚀</div>`;
 }
   </script>
+>>>>>>> 0276f9385aa49110b4343127c46f20ca65c80c30
 </body>
 
 </html>
