@@ -13,6 +13,7 @@ if (data && data.stats) {
 // Clean lines (IMPORTANT FIX)
 function cleanLines(text) {
   return text
+
     .split("\n")
     .map(line => line.trim())
     .filter(line => line !== "") // remove empty lines FIRST
