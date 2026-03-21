@@ -370,12 +370,25 @@
             <button class="send-btn" onclick="sendMsg()"><i class="fa-regular fa-paper-plane"></i></button>
           </div>
           <!-- Practice Navigation -->
-          <div id="practiceNav" class="hidden" style="padding:1rem;border-bottom:1px solid #222;display:flex;gap:10px;flex-wrap:wrap;">
-          <button onclick="prevPractice()" class="btn-primary">⬅ Previous</button>
-          <button onclick="nextPractice()" class="btn-primary">Next ➡</button>
-          <button onclick="jumpPractice()" class="btn-primary">Jump to Question</button>
-          
-          </div>
+         <div id="practiceQuestionCounter" style="padding:0.5rem 1rem;color:#888;font-size:0.9rem;display:none;"></div>
+
+<div id="practiceNav" class="hidden" style="padding:1rem;border-bottom:1px solid #222;display:flex;gap:10px;flex-wrap:wrap;">
+  <button onclick="prevPractice()" class="btn-primary nav-btn">⬅ Previous</button>
+  <button onclick="nextPractice()" class="btn-primary nav-btn">Next ➡</button>
+  <button onclick="jumpPractice()" class="btn-primary nav-btn">Jump to Question</button>
+  <button onclick="endPracticeSession()" class="btn-primary nav-btn" style="background:#ff4444;color:#fff;">End & Submit</button>
+</div>
+
+<!-- Final Score Card -->
+<div id="practiceScoreCard" class="hidden" style="margin:1rem;padding:1.5rem;background:#111;border:1px solid #222;border-radius:16px;text-align:center;">
+  <h2 style="color:#D9FF00;margin-bottom:0.5rem;">🎉 Session Complete!</h2>
+  <p style="color:#888;margin-bottom:1rem;">Here's your overall performance:</p>
+  <div id="practiceFinalScore" style="font-size:3rem;font-weight:800;color:#D9FF00;"></div>
+  <p style="color:#666;margin-top:0.5rem;">Average Score</p>
+  <div id="practiceBreakdown" style="margin-top:1.5rem;text-align:left;"></div>
+  <button onclick="resetPracticeSession()" class="btn-primary" style="margin-top:1.5rem;width:auto;padding:10px 24px;">Practice Again</button>
+</div>
+
         </div>
       </div>
     </section>
@@ -726,18 +739,33 @@
       });
     }
 
-    function handleChatResponse(data) {
-      const box = document.getElementById("chatBox");
-      // 1. Show Evaluation Feedback if any
-      if (data.evaluation) {
-        questionsAnswered++;
-        const fColor = data.evaluation.score > 7 ? "#00FF94" : "#FFB800";
-        box.innerHTML += `
-               <div class="feedback-card" style="border-left: 3px solid ${fColor}; background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                 <strong style="color: ${fColor}">AI Feedback (Score: ${data.evaluation.score}/10)</strong> <br>
-                 <p style="font-size: 0.85rem; color: #aaa; margin-top: 0.5rem;">${data.evaluation.feedback}</p>
-               </div>`;
-      }
+ function handleChatResponse(data) {
+  const box = document.getElementById("chatBox");
+  // 1. Show Evaluation Feedback if any
+  if (data.evaluation) {
+    questionsAnswered++;
+
+    // PRACTICE MODE: save silently, don't show score yet
+    if(sessionMode === "practice"){
+      practiceFeedbacks[practiceIndex] = {
+        score: data.evaluation.score,
+        feedback: data.evaluation.feedback,
+        question: practiceQuestions[practiceIndex],
+        answer: practiceAnswers[practiceIndex] || ""
+      };
+      box.innerHTML += `<div class="msg ai" style="color:#00FF94;">✅ Answer saved! Click Next to continue.</div>`;
+      box.scrollTop = box.scrollHeight;
+      return;
+    }
+
+    // INTERVIEW MODE: show feedback immediately
+    const fColor = data.evaluation.score > 7 ? "#00FF94" : "#FFB800";
+    box.innerHTML += `
+      <div class="feedback-card" style="border-left: 3px solid ${fColor}; background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <strong style="color: ${fColor}">AI Feedback (Score: ${data.evaluation.score}/10)</strong> <br>
+        <p style="font-size: 0.85rem; color: #aaa; margin-top: 0.5rem;">${data.evaluation.feedback}</p>
+      </div>`;
+  }
 
       if (questionsAnswered >= questionLimit) {
         box.innerHTML += `<div class="msg ai">🎉 Interview Completed! You have finished ${questionLimit} questions.</div>`;
@@ -1349,6 +1377,9 @@ if (hr) {
     let practiceQuestions = [];
     let practiceIndex = 0;
     let sessionMode = "interview";
+    let practiceAnswers = {};
+    let practiceScores = {};
+    let practiceFeedbacks = {};
 
     document.getElementById("intMode").onchange = function () {
       document.getElementById("customSkillBox").classList.toggle("hidden", this.value === 'resume');
@@ -1433,23 +1464,23 @@ if (hr) {
     }
 
     function showPracticeQuestion(){
-
-    const box = document.getElementById("chatBox");
-
-    if(practiceQuestions.length === 0){
-
+  const box = document.getElementById("chatBox");
+  if(practiceQuestions.length === 0){
     box.innerHTML += `<div class="msg ai">No questions generated</div>`;
     return;
+  }
+  const q = practiceQuestions[practiceIndex];
 
-    }
+  // Update counter display
+  const counter = document.getElementById("practiceQuestionCounter");
+  if(counter){
+    counter.innerText = `Question ${practiceIndex + 1} of ${practiceQuestions.length}`;
+    counter.style.display = "block";
+  }
 
-    const q = practiceQuestions[practiceIndex];
-
-    box.innerHTML += `<div class="msg ai"><b>Q${practiceIndex+1}:</b> ${q}</div>`;
-
-    box.scrollTop = box.scrollHeight;
-
-    }
+  box.innerHTML += `<div class="msg ai"><b>Q${practiceIndex+1} of ${practiceQuestions.length}:</b> ${q}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
 
     function nextPractice(){  
 
@@ -1498,23 +1529,24 @@ if (hr) {
       }
       const input = document.getElementById("userInput");
       const text = isTimeout ? "[TIMEOUT]" : (overrideText || input.value.trim());
-      if(sessionMode === "practice"){
-        const box = document.getElementById("chatBox");
+    if(sessionMode === "practice"){
+  const box = document.getElementById("chatBox");
+  box.innerHTML += `<div class="msg user">${text}</div>`;
 
-        box.innerHTML += `<div class="msg user">${text}</div>`;
+  // Save answer
+  practiceAnswers[practiceIndex] = text;
 
-        if(socket){
-          socket.emit("chatMessage", {
-          email,
-          message: text,
-          context: { practice: true },
-          question: practiceQuestions[practiceIndex]
-          });
-        }
-
-        input.value="";
-        return;
-      }
+  if(socket){
+    socket.emit("chatMessage", {
+    email,
+    message: text,
+    context: { practice: true },
+    question: practiceQuestions[practiceIndex]
+    });
+  }
+  input.value="";
+  return;
+}
 
       const box = document.getElementById("chatBox");
       const mode = document.getElementById("intMode").value;
@@ -1809,9 +1841,69 @@ const view = params.get("view");
 if (view) {
   showView(view);
 }
+<<<<<<< HEAD
   </script>
   <script src="roles.js"></script>
   <script src="unified-resume.js"></script>
+=======
+  function endPracticeSession(){
+  const feedbackKeys = Object.keys(practiceFeedbacks);
+
+  if(feedbackKeys.length === 0){
+    showToast("Please answer at least one question before submitting.");
+    return;
+  }
+
+  const allScores = feedbackKeys.map(k => practiceFeedbacks[k].score);
+  const avg = (allScores.reduce((a,b) => a + b, 0) / allScores.length).toFixed(1);
+  const avgColor = avg >= 7 ? "#00FF94" : avg >= 5 ? "#FFB800" : "#ff4444";
+
+  // Build breakdown
+  let breakdown = "";
+  practiceQuestions.forEach((q, i) => {
+    const f = practiceFeedbacks[i];
+    if(f){
+      const c = f.score >= 7 ? "#00FF94" : f.score >= 5 ? "#FFB800" : "#ff4444";
+      breakdown += `
+        <div style="margin-bottom:1rem;padding:1rem;background:#000;border-radius:10px;border:1px solid #222;">
+          <p style="color:#888;font-size:0.8rem;margin-bottom:4px;">Q${i+1}: ${f.question}</p>
+          <p style="color:#ccc;font-size:0.85rem;margin-bottom:6px;font-style:italic;">"${f.answer || 'No answer'}"</p>
+          <span style="color:${c};font-weight:700;">Score: ${f.score}/10</span>
+          <p style="color:#777;font-size:0.8rem;margin-top:4px;">${f.feedback}</p>
+        </div>`;
+    } else {
+      breakdown += `
+        <div style="margin-bottom:1rem;padding:1rem;background:#000;border-radius:10px;border:1px solid #222;">
+          <p style="color:#888;font-size:0.8rem;">Q${i+1}: ${q}</p>
+          <span style="color:#666;font-size:0.85rem;">Not answered</span>
+        </div>`;
+    }
+  });
+
+  document.getElementById("practiceFinalScore").innerHTML =
+    `<span style="color:${avgColor}">${avg}</span><span style="font-size:1.5rem;color:#666;">/10</span>`;
+  document.getElementById("practiceBreakdown").innerHTML = breakdown;
+  document.getElementById("practiceScoreCard").classList.remove("hidden");
+  document.getElementById("practiceNav").classList.add("hidden");
+  document.getElementById("practiceQuestionCounter").style.display = "none";
+  document.getElementById("chatBox").style.display = "none";
+  document.querySelector(".chat-input-bar").style.display = "none";
+}
+
+function resetPracticeSession(){
+  practiceAnswers = {};
+  practiceScores = {};
+  practiceFeedbacks = {};
+  practiceQuestions = [];
+  practiceIndex = 0;
+  document.getElementById("practiceScoreCard").classList.add("hidden");
+  document.getElementById("practiceQuestionCounter").style.display = "none";
+  document.getElementById("chatBox").style.display = "";
+  document.querySelector(".chat-input-bar").style.display = "";
+  document.getElementById("chatBox").innerHTML = `<div class="msg ai">Select your settings and click Start Session to begin! 🚀</div>`;
+}
+  </script>
+>>>>>>> 0276f9385aa49110b4343127c46f20ca65c80c30
 </body>
 
 </html>
