@@ -1048,3 +1048,10 @@ input:focus, select:focus {
   background: rgba(255, 68, 68, 0.1) !important;
   border-radius: 8px;
 }
+
+/* Practice Nav Buttons - Side by Side */
+.nav-btn {
+  width: auto !important;
+  flex: 1;
+  padding: 14px 20px;
+}
