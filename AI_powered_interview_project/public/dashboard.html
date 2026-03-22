@@ -1362,10 +1362,11 @@
               <td style="padding: 1rem; color: #ccc;">${fname}</td>
               <td style="padding: 1rem; font-weight: 600; color: ${scoreColor}">${score}/100</td>
               <td style="padding: 1rem; color: #888;">${level}</td>
-              <td style="padding: 1rem;">
+              <td style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
                 <button onclick="viewHistoricalResume(${index})" style="background:var(--primary); color:#000; border:none; padding:4px 12px; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.8rem;">
                   View
                 </button>
+                <i onclick="deleteResumeHistory('${r._id}')" class="fa-solid fa-trash" style="color: #ff4444; cursor: pointer; font-size: 1rem; transition: 0.2s;" onmouseover="this.style.color='#ff0000'" onmouseout="this.style.color='#ff4444'" title="Delete"></i>
               </td>
             </tr>
           `;
@@ -1373,6 +1374,21 @@
 
       } catch (e) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#ff4444;">Failed to load resume history.</td></tr>';
+      }
+    }
+
+    async function deleteResumeHistory(id) {
+      if (!confirm("Are you sure you want to permanently delete this resume analysis?")) return;
+      try {
+        const res = await apiFetch(`${API}/resume-history/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          loadResumeHistory();
+        } else {
+          alert('Failed to delete: ' + data.message);
+        }
+      } catch (e) {
+        alert('Error deleting resume analysis.');
       }
     }
 

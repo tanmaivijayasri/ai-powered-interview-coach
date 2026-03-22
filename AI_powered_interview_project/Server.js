@@ -604,6 +604,30 @@ if (multer) {
 
       console.log("Detected skills:", skillsFound);
 
+      // Save to Resume History
+      if (req.user && req.user.email && Resume) {
+        try {
+          const newResume = new Resume({
+            userEmail: req.user.email,
+            filename: file.originalname || "resume.pdf",
+            extractedText: lowerText.substring(0, 1000), // Save a snippet of the text
+            analysis: {
+              score: score,
+              skills: skillsFound,
+              level: level,
+              summary: summary,
+              suggestions: roadmap,
+              suitable_jobs: jobMatch.map(j => j.role),
+              skills_to_improve: []
+            }
+          });
+          await newResume.save();
+          console.log("✅ Saved resume analysis to history");
+        } catch (saveError) {
+          console.error("❌ Failed to save resume history:", saveError.message);
+        }
+      }
+
       return res.json({
         success: true,
         score,
@@ -868,6 +892,18 @@ app.get("/resume-history/:email", verifyToken, async (req, res) => {
     const { email } = req.params;
     const resumes = Resume ? await Resume.find({ userEmail: email }).sort({ uploadedAt: -1 }) : [];
     res.json({ success: true, resumes });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.delete("/resume-history/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!Resume) return res.status(500).json({ success: false, message: "DB Error" });
+    const match = await Resume.findById(id);
+    if (!match) return res.status(404).json({ success: false, message: "Not found" });
+    if (match.userEmail !== req.user.email) return res.status(403).json({ success: false, message: "Unauthorized" });
+    await Resume.findByIdAndDelete(id);
+    res.json({ success: true, message: "Deleted successfully" });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
