@@ -83,7 +83,32 @@ async function analyzeUnifiedResume() {
       return;
     }
 
-    // Populate UI on Success
+    renderResumeResult(data);
+
+    result.classList.remove('hidden');
+    
+    // re-enable button for new uploads
+    btn.disabled = false;
+    btn.innerText = "Analyze Resume";
+    
+  } catch (err) {
+    loading.classList.add('hidden');
+    btn.disabled = false;
+    btn.innerText = "Analyze Resume";
+    errorText.innerText = "Application Error: " + err.message;
+    errorBox.classList.remove('hidden');
+  }
+}
+
+function renderResumeResult(data) {
+    if (!data) return;
+
+    // We also need to get the local result div to ensure it's unhidden when viewing history
+    const result = document.getElementById('unifiedAnalysisResult');
+    if (result) {
+        result.classList.remove('hidden');
+    }
+
     document.getElementById('unifiedLevel').innerText = data.level || "Unknown";
     
     if (data.bestRole) {
@@ -116,42 +141,39 @@ async function analyzeUnifiedResume() {
     document.getElementById('unifiedSummary').innerText = data.summary || "No summary available.";
     
     const skillsBox = document.getElementById('unifiedSkillsFound');
-    skillsBox.innerHTML = '';
-    if (data.skillsFound && data.skillsFound.length > 0) {
-      data.skillsFound.forEach(s => {
-        const span = document.createElement('span');
-        span.innerText = s;
-        span.style.cssText = 'background: rgba(0, 255, 148, 0.1); color: #00FF94; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; border: 1px solid #00FF94;';
-        skillsBox.appendChild(span);
-      });
-    } else {
-      skillsBox.innerHTML = '<span style="color: #666;">None detected</span>';
+    if (skillsBox) {
+      skillsBox.innerHTML = '';
+      if (data.skillsFound && data.skillsFound.length > 0) {
+        data.skillsFound.forEach(s => {
+          const span = document.createElement('span');
+          span.innerText = s;
+          span.style.cssText = 'background: rgba(0, 255, 148, 0.1); color: #00FF94; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; border: 1px solid #00FF94;';
+          skillsBox.appendChild(span);
+        });
+      } else {
+        skillsBox.innerHTML = '<span style="color: #666;">None detected</span>';
+      }
     }
 
     const roadmapBox = document.getElementById('unifiedRoadmap');
-    roadmapBox.innerHTML = '';
-    if (data.roadmap && data.roadmap.length > 0) {
-      data.roadmap.forEach(s => {
-        const li = document.createElement('li');
-        li.innerText = s;
-        li.style.marginBottom = '8px';
-        roadmapBox.appendChild(li);
-      });
-    } else {
-        roadmapBox.innerHTML = '<li style="color: #666;">Looking good! You are well prepared.</li>';
+    if (roadmapBox) {
+      roadmapBox.innerHTML = '';
+      if (data.roadmap && data.roadmap.length > 0) {
+        data.roadmap.forEach(s => {
+          const li = document.createElement('li');
+          li.innerText = s;
+          li.style.marginBottom = '8px';
+          roadmapBox.appendChild(li);
+        });
+      } else if (data.suggestions && data.suggestions.length > 0) { // Fallback to 'suggestions' if history has that
+        data.suggestions.forEach(s => {
+          const li = document.createElement('li');
+          li.innerText = s;
+          li.style.marginBottom = '8px';
+          roadmapBox.appendChild(li);
+        });
+      } else {
+          roadmapBox.innerHTML = '<li style="color: #666;">Looking good! You are well prepared.</li>';
+      }
     }
-
-    result.classList.remove('hidden');
-    
-    // re-enable button for new uploads
-    btn.disabled = false;
-    btn.innerText = "Analyze Resume";
-    
-  } catch (err) {
-    loading.classList.add('hidden');
-    btn.disabled = false;
-    btn.innerText = "Analyze Resume";
-    errorText.innerText = "Application Error: " + err.message;
-    errorBox.classList.remove('hidden');
-  }
 }
