@@ -213,8 +213,8 @@
       <div id="unifiedUploadUI" style="max-width: 900px; margin: 0 auto;">
 
         <!-- Error Message Box -->
-        <div id="unifiedErrorBox"
-          style="display: none; background: rgba(255, 68, 68, 0.1); border: 1px solid #FF4444; color: #FF4444; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
+        <div id="unifiedErrorBox" class="hidden"
+          style="background: rgba(255, 68, 68, 0.1); border: 1px solid #FF4444; color: #FF4444; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
           <i class="fa-solid fa-circle-exclamation"></i> <span id="unifiedErrorText"></span>
         </div>
 
@@ -234,13 +234,13 @@
           Analyze Resume
         </button>
 
-        <div id="unifiedAnalysisLoading" class="hidden" style="text-align: center; margin-top: 3rem; display: none;">
+        <div id="unifiedAnalysisLoading" class="hidden" style="text-align: center; margin-top: 3rem;">
           <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: #00FF94;"></i>
           <p style="margin-top: 1rem; color: #ccc;">AI is analyzing your profile...</p>
         </div>
 
         <!-- RESULTS SECTION -->
-        <div id="unifiedAnalysisResult" class="hidden" style="margin-top: 2rem; display: none;">
+        <div id="unifiedAnalysisResult" class="hidden" style="margin-top: 2rem;">
           <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
             <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
               <div style="flex: 1;">
