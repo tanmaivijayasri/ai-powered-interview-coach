@@ -660,10 +660,15 @@ app.get("/api/job-roles", verifyToken, (req, res) => {
 
 app.post("/generate-questions", verifyToken, async (req, res) => {
   try {
-    const { email, jobRole, jobDescription } = req.body;
+    const { email, jobRole, jobDescription, skill, count } = req.body;
+    const numQuestions = count || 5;
+
     let contextData = `Target Role: ${jobRole || 'Software Engineer'}\n`;
     if (jobDescription) {
       contextData += `Job Description: ${jobDescription}\n`;
+    }
+    if (skill) {
+      contextData += `Target Topic/Skill: ${skill}\n`;
     }
 
     if (Resume) {
@@ -686,22 +691,22 @@ app.post("/generate-questions", verifyToken, async (req, res) => {
     }
 
     const prompt = `
-You are an expert technical interviewer. Generate 5 distinct, highly personalized interview questions for this specific candidate.
+You are an expert technical interviewer. Generate ${numQuestions} distinct, highly personalized interview questions for this specific candidate.
 
 Context:
 ${contextData}
 
 CRITICAL RULES:
-1. STRICTLY TAILOR the questions to the "Target Role" and "Job Description". Do not ask general software engineering questions if a specific role like "Frontend" or "Data Scientist" is specified.
+1. STRICTLY TAILOR the questions to the "Target Role" and "Job Description" or "Target Topic/Skill". Do not ask general software engineering questions if a specific role or topic is specified.
 2. DO NOT ask generic questions like "Tell me about yourself" or "What are your strengths/weaknesses".
 3. Provide a mix of technical, scenario-based, and behavioral questions specific to the role and candidate skills.
-4. If "Candidate Skills" are provided, ensure at least 2 questions test those specific skills deeply.
-5. Ensure these 5 questions are distinctly different from each other.
+4. If "Candidate Skills" or "Target Topic/Skill" are provided, ensure most questions test those specific skills deeply.
+5. Ensure these ${numQuestions} questions are distinctly different from each other.
 
 Task:
-Return strictly a JSON object with a "questions" array containing 5 strings.
+Return strictly a JSON object with a "questions" array containing ${numQuestions} strings.
 {
-  "questions": ["q1", "q2", "q3", "q4", "q5"]
+  "questions": ["q1", "q2", "q3"]
 }`;
 
    const aiRes = await callAI(
@@ -883,7 +888,7 @@ if (io) {
     console.log("🟢 WebSocket Connected:", socket.id);
 
     socket.on("chatMessage", async (data) => {
-      const { email, message, context, isFirst, timeTaken } = data;
+      const { email, message, context, isFirst, timeTaken, question } = data;
 
       try {
         let user = User ? await User.findOne({ email }) : null;
@@ -897,8 +902,13 @@ if (io) {
         let evaluation = null;
         if (!isFirst) {
           // Get the last generated question for this user to store it in the attempt
-          const lastQ = GeneratedQuestion ? await GeneratedQuestion.findOne({ userEmail: email }).sort({ timestamp: -1 }) : null;
-          const questionText = lastQ ? lastQ.questionText : "Interview Question";
+          let questionText = "Interview Question";
+          if (context && context.practice) {
+            questionText = question || "Practice Question";
+          } else {
+            const lastQ = GeneratedQuestion ? await GeneratedQuestion.findOne({ userEmail: email }).sort({ timestamp: -1 }) : null;
+            questionText = lastQ ? lastQ.questionText : "Interview Question";
+          }
 
           // Strict JSON prompt for evaluation
           const evalPrompt = `
@@ -1011,7 +1021,15 @@ Return STRICT JSON only:
             return;
         }
 
-
+        // IF PRACTICE MODE, SKIP GENERATING NEXT QUESTION TO SAVE API TOKENS 
+        // (Frontend manages the 5 questions locally)
+        if (context && context.practice) {
+            socket.emit("chatResponse", {
+                reply: "Practice answer recorded.",
+                evaluation: evaluation
+            });
+            return;
+        }
 
         // 2. Generate Next Question
         let contextData = "";

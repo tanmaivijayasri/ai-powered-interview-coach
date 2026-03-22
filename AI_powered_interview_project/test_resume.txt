@@ -1,4 +1,0 @@
-This is a test resume.
-Name: John Doe
-Skills: JavaScript, Node.js
-Experience: 5 years of software engineering.

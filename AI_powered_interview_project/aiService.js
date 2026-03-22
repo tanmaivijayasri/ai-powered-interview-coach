@@ -89,16 +89,26 @@ Consistency beats talent. Keep improving every day!
     }
 
     // --- MODE 2: EVALUATION (Server asking to score an answer) ---
-    if (p.includes("evaluate this answer")) {
+    if (p.includes("evaluate this answer") || p.includes("evaluate the candidate’s answer")) {
         console.warn("⚠️ SmartMock returning simulated evaluation feedback.");
 
         // Safely extract the question
-        const questionMatch = prompt.match(/Question:\s*"([^]*?)"\s*\n/i) || prompt.match(/Question:\s*"([^]*?)"/i);
+        const questionMatch = prompt.match(/Question:\s*"?([^]*?)"?\s*\n/i);
         const questionText = questionMatch ? questionMatch[1].trim().toLowerCase() : "";
 
         // Safely extract the user answer
-        const answerMatch = prompt.match(/User Answer:\s*"([^]*?)"\s*Instructions/i) || prompt.match(/User Answer:\s*([\s\S]*?)\s*Instructions/i) || prompt.match(/User Answer:\s*"([^]*?)"/i);
-        const userAnswer = answerMatch ? (answerMatch[1] || answerMatch[2] || answerMatch[3] || "").trim() : "";
+        let userAnswer = "";
+        const answerMatch1 = prompt.match(/User Answer:\s*"?([^]*?)"?\s*Instructions/i);
+        const answerMatch2 = prompt.match(/Answer:\s*([\s\S]*)/i); // For HR
+        
+        if (answerMatch1) {
+            userAnswer = answerMatch1[1].trim();
+        } else if (answerMatch2) {
+            userAnswer = answerMatch2[1].trim();
+        }
+
+        // Strip off HR prompt boilerplate if present
+        userAnswer = userAnswer.replace(/Evaluation criteria:[\s\S]*/i, "").trim();
 
         const len = userAnswer.length;
         const lowerAnswer = userAnswer.toLowerCase();
@@ -125,22 +135,41 @@ Consistency beats talent. Keep improving every day!
             isCorrect = true;
         }
 
-        if (len < 15) {
-            score = 3;
-            feedback = `Your answer is way too brief. Try to elaborate on the technical aspects and provide concrete examples next time.`;
-        } else if (isCorrect) {
-            score = len > 80 ? 9 : 7;
-            feedback = `Good job. Your explanation is technically accurate and well-reasoned. Keep up the thorough answers!`;
+        
+        // HR specific scoring (if there's no technical keywords)
+        if (p.includes("evaluate the candidate’s answer")) {
+             if (len > 180) {
+                 score = 9;
+                 feedback = "Excellent answer with strong clarity and depth. You clearly articulated your experience.";
+             } else if (len > 100) {
+                 score = 7;
+                 feedback = "Good answer, but could include more specific examples to strengthen your point.";
+             } else if (len > 50) {
+                 score = 5;
+                 feedback = "Average answer. Try to elaborate more clearly on your thought process.";
+             } else {
+                 score = 3;
+                 feedback = "Too brief. Add more explanation and detail to fully answer the question.";
+             }
         } else {
-            score = 4;
-            feedback = `Your answer doesn't seem to fully address the core concepts of the question. Try to focus on the key technologies discussed.`;
+            // Technical Scoring
+            if (len < 15) {
+                score = 3;
+                feedback = `Your answer is way too brief. Try to elaborate on the technical aspects and provide concrete examples next time.`;
+            } else if (isCorrect) {
+                score = len > 80 ? 9 : 7;
+                feedback = `Good job. Your explanation is technically accurate and well-reasoned. Keep up the thorough answers!`;
+            } else {
+                score = 4;
+                feedback = `Your answer doesn't seem to fully address the core concepts of the question. Try to focus on the key technologies discussed.`;
+            }
         }
 
         return {
             reasoning: "Simulated mock reasoning since AI API is unavailable.",
             score: score,
             feedback: feedback,
-            category: "Technical"
+            category: p.includes("evaluate the candidate’s answer") ? "Behavioral" : "Technical"
         };
     }
 
@@ -261,52 +290,63 @@ Consistency beats talent. Keep improving every day!
     }
 
     // --- MODE: GENERATE MULTIPLE QUESTIONS (Dashboard) ---
-    if (p.includes("generate 5 distinct")) {
+    if (p.includes("generate") && p.includes("distinct") && p.includes("personalized interview questions")) {
+        const countMatch = prompt.match(/Generate\s*(\d+)\s*distinct/i);
+        const count = countMatch ? parseInt(countMatch[1]) : 5;
+
         const roleMatch = prompt.match(/Target Role:\s*(.*)/i);
         const role = roleMatch ? roleMatch[1].trim() : "this role";
-        const roleLower = role.toLowerCase();
+        
+        const topicMatch = prompt.match(/Target Topic\/Skill:\s*(.*)/i);
+        const targetFocus = topicMatch ? topicMatch[1].trim() : role;
+        
+        const targetLower = targetFocus.toLowerCase();
+        let questionsList = [];
 
-        if (roleLower.includes("frontend") || roleLower.includes("react") || roleLower.includes("ui")) {
-            return {
-                questions: [
+        if (targetLower.includes("frontend") || targetLower.includes("react") || targetLower.includes("ui")) {
+            questionsList = [
                     "Can you explain the difference between the Virtual DOM and the real DOM?",
                     "How do you manage state in a large-scale frontend application?",
                     "Describe a time you had to optimize the performance of a web page.",
                     "What are your favorite CSS features for building responsive layouts?",
                     "How do you handle accessibility (a11y) when building UI components?"
-                ]
-            };
-        } else if (roleLower.includes("backend") || roleLower.includes("node") || roleLower.includes("java")) {
-            return {
-                questions: [
-                    "Explain the concept of asynchronous programming and how it applies to backend services.",
-                    "How do you secure a REST API against common vulnerabilities?",
-                    "Describe your experience with database indexing and query optimization.",
-                    "What strategies do you use for caching backend responses?",
-                    "Tell me about a time you had to design or scale a microservice architecture."
-                ]
-            };
-        } else if (roleLower.includes("data") || roleLower.includes("machine learning") || roleLower.includes("python")) {
-            return {
-                questions: [
-                    "Can you explain the difference between supervised and unsupervised learning?",
-                    "How do you handle missing or corrupted data in a dataset?",
-                    "Describe a machine learning model or data pipeline you built recently.",
-                    "What metrics do you use to evaluate your queries or models?",
-                    "How do you optimize data processing workflows for large datasets?"
-                ]
-            };
+                ];
+        } else if (targetLower.includes("backend") || targetLower.includes("node") || targetLower.includes("java")) {
+            questionsList = [
+                "Explain the concept of asynchronous programming and how it applies to backend services.",
+                "How do you secure a REST API against common vulnerabilities?",
+                "Describe your experience with database indexing and query optimization.",
+                "What strategies do you use for caching backend responses?",
+                "Tell me about a time you had to design or scale a microservice architecture."
+            ];
+        } else if (targetLower.includes("data") || targetLower.includes("machine learning") || targetLower.includes("python")) {
+            questionsList = [
+                "Can you explain the difference between supervised and unsupervised learning?",
+                "How do you handle missing or corrupted data in a dataset?",
+                "Describe a machine learning model or data pipeline you built recently.",
+                "What metrics do you use to evaluate your queries or models?",
+                "How do you optimize data processing workflows for large datasets?"
+            ];
+        } else if (targetLower.includes("devops") || targetLower.includes("cloud") || targetLower.includes("aws")) {
+            questionsList = [
+                "How do you implement CI/CD pipelines?",
+                "What strategies do you use for zero-downtime deployments?",
+                "Describe your experience with Infrastructure as Code.",
+                "How do you monitor and handle alerts for production microservices?",
+                "Explain how you use Docker and Kubernetes in your daily workflows."
+            ];
         } else {
-            return {
-                questions: [
-                    `Can you explain your experience and how it aligns with the ${role} position?`,
-                    `Describe a challenging technical problem you solved recently related to this field.`,
-                    `How do you ensure quality and maintainability in your work?`,
-                    `Tell me about a time you had to learn a new concept or tool quickly.`,
-                    `How do you handle technical disagreements within a team?`
-                ]
-            };
+            questionsList = [
+                `Can you explain your experience and how it aligns with the ${targetFocus} area?`,
+                `Describe a challenging technical problem you solved recently related to this field.`,
+                `How do you ensure quality and maintainability in your work?`,
+                `Tell me about a time you had to learn a new concept or tool quickly.`,
+                `How do you handle technical disagreements within a team?`,
+                `What are the most important best practices for ${targetFocus}?`
+            ];
         }
+
+        return { questions: questionsList.slice(0, count) };
     }
 
     // --- MODE 3: DIRECT CHAT / FALLBACK ---
@@ -402,7 +442,9 @@ async function callAI(userPrompt, systemMsg = "You are an expert technical inter
 
     // 3. Fallback to Smart Mock if ALL API attempts fail
     console.warn("⚠️ All AI models failed. Switching to Smart Mock mode.");
-    return getSmartMockResponse(userPrompt);
+    const mockResult = getSmartMockResponse(userPrompt);
+
+    return mockResult;
 }
 
 module.exports = { callAI };

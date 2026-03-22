@@ -1404,6 +1404,13 @@
       document.getElementById("customSkillBox").classList.toggle("hidden", this.value === 'resume');
     };
 
+    document.getElementById("sessionMode").onchange = function () {
+      if (this.value === 'practice') {
+        document.getElementById("intMode").value = 'custom';
+        document.getElementById("customSkillBox").classList.remove("hidden");
+      }
+    };
+
     function startTimer() {
       stopTimer();
       timeLeft = 60;
@@ -1457,6 +1464,8 @@
           method: "POST",
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            email,
+            jobRole: localStorage.getItem("userRole") || "Software Engineer",
             skill,
             count: questionLimit
           })
@@ -1559,7 +1568,7 @@
           socket.emit("chatMessage", {
             email,
             message: text,
-            context: { practice: true },
+            context: { practice: true, mode: "practice" },
             question: practiceQuestions[practiceIndex]
           });
         }
@@ -1860,70 +1869,65 @@
     if (view) {
       showView(view);
     }
-<<<<<<< HEAD
-  </script>
-  <script src="roles.js"></script>
-  <script src="unified-resume.js"></script>
-  =======
-  function endPracticeSession(){
-  const feedbackKeys = Object.keys(practiceFeedbacks);
+    function endPracticeSession(){
+    const feedbackKeys = Object.keys(practiceFeedbacks);
 
-  if(feedbackKeys.length === 0){
-  showToast("Please answer at least one question before submitting.");
-  return;
-  }
+    if(feedbackKeys.length === 0){
+      showToast("Please answer at least one question before submitting.");
+      return;
+    }
 
-  const allScores = feedbackKeys.map(k => practiceFeedbacks[k].score);
-  const avg = (allScores.reduce((a,b) => a + b, 0) / allScores.length).toFixed(1);
-  const avgColor = avg >= 7 ? "#00FF94" : avg >= 5 ? "#FFB800" : "#ff4444";
+    const allScores = feedbackKeys.map(k => practiceFeedbacks[k].score);
+    const avg = (allScores.reduce((a,b) => a + b, 0) / allScores.length).toFixed(1);
+    const avgColor = avg >= 7 ? "#00FF94" : avg >= 5 ? "#FFB800" : "#ff4444";
 
-  // Build breakdown
-  let breakdown = "";
-  practiceQuestions.forEach((q, i) => {
-  const f = practiceFeedbacks[i];
-  if(f){
-  const c = f.score >= 7 ? "#00FF94" : f.score >= 5 ? "#FFB800" : "#ff4444";
-  breakdown += `
-  <div style="margin-bottom:1rem;padding:1rem;background:#000;border-radius:10px;border:1px solid #222;">
-    <p style="color:#888;font-size:0.8rem;margin-bottom:4px;">Q${i+1}: ${f.question}</p>
-    <p style="color:#ccc;font-size:0.85rem;margin-bottom:6px;font-style:italic;">"${f.answer || 'No answer'}"</p>
-    <span style="color:${c};font-weight:700;">Score: ${f.score}/10</span>
-    <p style="color:#777;font-size:0.8rem;margin-top:4px;">${f.feedback}</p>
-  </div>`;
-  } else {
-  breakdown += `
-  <div style="margin-bottom:1rem;padding:1rem;background:#000;border-radius:10px;border:1px solid #222;">
-    <p style="color:#888;font-size:0.8rem;">Q${i+1}: ${q}</p>
-    <span style="color:#666;font-size:0.85rem;">Not answered</span>
-  </div>`;
-  }
-  });
+    // Build breakdown
+    let breakdown = "";
+    practiceQuestions.forEach((q, i) => {
+      const f = practiceFeedbacks[i];
+      if(f){
+        const c = f.score >= 7 ? "#00FF94" : f.score >= 5 ? "#FFB800" : "#ff4444";
+        breakdown += `
+        <div style="margin-bottom:1rem;padding:1rem;background:#000;border-radius:10px;border:1px solid #222;">
+          <p style="color:#888;font-size:0.8rem;margin-bottom:4px;">Q${i+1}: ${f.question}</p>
+          <p style="color:#ccc;font-size:0.85rem;margin-bottom:6px;font-style:italic;">"${f.answer || 'No answer'}"</p>
+          <span style="color:${c};font-weight:700;">Score: ${f.score}/10</span>
+          <p style="color:#777;font-size:0.8rem;margin-top:4px;">${f.feedback}</p>
+        </div>`;
+      } else {
+        breakdown += `
+        <div style="margin-bottom:1rem;padding:1rem;background:#000;border-radius:10px;border:1px solid #222;">
+          <p style="color:#888;font-size:0.8rem;">Q${i+1}: ${q}</p>
+          <span style="color:#666;font-size:0.85rem;">Not answered</span>
+        </div>`;
+      }
+    });
 
-  document.getElementById("practiceFinalScore").innerHTML =
-  `<span style="color:${avgColor}">${avg}</span><span style="font-size:1.5rem;color:#666;">/10</span>`;
-  document.getElementById("practiceBreakdown").innerHTML = breakdown;
-  document.getElementById("practiceScoreCard").classList.remove("hidden");
-  document.getElementById("practiceNav").classList.add("hidden");
-  document.getElementById("practiceQuestionCounter").style.display = "none";
-  document.getElementById("chatBox").style.display = "none";
-  document.querySelector(".chat-input-bar").style.display = "none";
+    document.getElementById("practiceFinalScore").innerHTML =
+    `<span style="color:${avgColor}">${avg}</span><span style="font-size:1.5rem;color:#666;">/10</span>`;
+    document.getElementById("practiceBreakdown").innerHTML = breakdown;
+    document.getElementById("practiceScoreCard").classList.remove("hidden");
+    document.getElementById("practiceNav").classList.add("hidden");
+    document.getElementById("practiceQuestionCounter").style.display = "none";
+    document.getElementById("chatBox").style.display = "none";
+    document.querySelector(".chat-input-bar").style.display = "none";
   }
 
   function resetPracticeSession(){
-  practiceAnswers = {};
-  practiceScores = {};
-  practiceFeedbacks = {};
-  practiceQuestions = [];
-  practiceIndex = 0;
-  document.getElementById("practiceScoreCard").classList.add("hidden");
-  document.getElementById("practiceQuestionCounter").style.display = "none";
-  document.getElementById("chatBox").style.display = "";
-  document.querySelector(".chat-input-bar").style.display = "";
-  document.getElementById("chatBox").innerHTML = `<div class="msg ai">Select your settings and click Start Session to
-    begin! 🚀</div>`;
+    practiceAnswers = {};
+    practiceScores = {};
+    practiceFeedbacks = {};
+    practiceQuestions = [];
+    practiceIndex = 0;
+    document.getElementById("practiceScoreCard").classList.add("hidden");
+    document.getElementById("practiceQuestionCounter").style.display = "none";
+    document.getElementById("chatBox").style.display = "";
+    document.querySelector(".chat-input-bar").style.display = "";
+    document.getElementById("chatBox").innerHTML = `<div class="msg ai">Select your settings and click Start Session to begin! 🚀</div>`;
   }
   </script>
-  >>>>>>> 0276f9385aa49110b4343127c46f20ca65c80c30
+  <script src="roles.js"></script>
+  <script src="unified-resume.js"></script>
 </body>
 
 </html>

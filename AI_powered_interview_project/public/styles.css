@@ -84,6 +84,7 @@ body {
   font-weight: 700;
   background: linear-gradient(to right, white, #888);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -469,14 +470,22 @@ canvas {
 }
 
 @keyframes throbShape {
-  0% { opacity: 0.4; filter: blur(50px); }
-  100% { opacity: 0.9; filter: blur(80px); }
+  0% {
+    opacity: 0.4;
+    filter: blur(50px);
+  }
+
+  100% {
+    opacity: 0.9;
+    filter: blur(80px);
+  }
 }
 
 .shape-1 {
   width: 400px;
   height: 400px;
-  background: rgba(217, 255, 0, 0.15); /* Primary Neon Lime */
+  background: rgba(217, 255, 0, 0.15);
+  /* Primary Neon Lime */
   top: 10%;
   left: 20%;
 }
@@ -484,7 +493,8 @@ canvas {
 .shape-2 {
   width: 500px;
   height: 500px;
-  background: rgba(157, 0, 255, 0.12); /* Accent Purple */
+  background: rgba(157, 0, 255, 0.12);
+  /* Accent Purple */
   bottom: 10%;
   right: 15%;
 }
@@ -492,7 +502,8 @@ canvas {
 .shape-3 {
   width: 300px;
   height: 300px;
-  background: rgba(0, 255, 148, 0.1); /* Success Green */
+  background: rgba(0, 255, 148, 0.1);
+  /* Success Green */
   top: 40%;
   right: 30%;
 }
@@ -500,7 +511,8 @@ canvas {
 .shape-4 {
   width: 200px;
   height: 200px;
-  background: rgba(0, 148, 255, 0.1); /* Blue Accent */
+  background: rgba(0, 148, 255, 0.1);
+  /* Blue Accent */
   bottom: 30%;
   left: 30%;
 }
@@ -511,7 +523,7 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -522,8 +534,13 @@ canvas {
 }
 
 @keyframes panGrid {
-  0% { background-position: 0px 0px; }
-  100% { background-position: 50px 50px; }
+  0% {
+    background-position: 0px 0px;
+  }
+
+  100% {
+    background-position: 50px 50px;
+  }
 }
 
 /* Left Side - Hero/Info */
@@ -571,9 +588,17 @@ canvas {
   color: #fff;
 }
 
-.hero-item:nth-child(1) { animation-delay: 0.2s; }
-.hero-item:nth-child(2) { animation-delay: 0.4s; }
-.hero-item:nth-child(3) { animation-delay: 0.6s; }
+.hero-item:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.hero-item:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.hero-item:nth-child(3) {
+  animation-delay: 0.6s;
+}
 
 .hero-icon {
   width: 40px;
@@ -667,7 +692,8 @@ canvas {
   font-weight: 500;
 }
 
-input, select {
+input,
+select {
   width: 100%;
   padding: 0.875rem 1.25rem;
   background: var(--input-bg);
@@ -678,7 +704,8 @@ input, select {
   transition: var(--transition);
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--primary);
   background: #1E1E1E;
@@ -698,7 +725,9 @@ input:focus, select:focus {
   color: #666;
 }
 
-.eye-icon:hover { color: #fff; }
+.eye-icon:hover {
+  color: #fff;
+}
 
 .error-message {
   color: var(--error);
@@ -718,7 +747,9 @@ input:focus, select:focus {
   cursor: pointer;
 }
 
-.forgot-pass:hover { color: var(--primary); }
+.forgot-pass:hover {
+  color: var(--primary);
+}
 
 .switch-text {
   margin-top: 1.5rem;
@@ -733,7 +764,9 @@ input:focus, select:focus {
   cursor: pointer;
 }
 
-.switch-link:hover { text-decoration: underline; }
+.switch-link:hover {
+  text-decoration: underline;
+}
 
 .btn-primary {
   background: var(--primary);
@@ -760,18 +793,39 @@ input:focus, select:focus {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeInRight {
-  from { opacity: 0; transform: translateX(50px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideUpFade {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Mobile Responsive */
@@ -816,196 +870,148 @@ input:focus, select:focus {
 
 /* Settings & Avatar Picker */
 .avatar-option {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 12px;
-    background: #1a1a1a;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 5px;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #1a1a1a;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 5px;
 }
 
 .avatar-option:hover {
-    transform: scale(1.05);
-    background: #222;
+  transform: scale(1.05);
+  background: #222;
 }
 
 .avatar-option.selected {
-    border-color: var(--primary);
-    background: rgba(217, 255, 0, 0.1);
+  border-color: var(--primary);
+  background: rgba(217, 255, 0, 0.1);
 }
 
 .profile-input {
-    background: #000;
-    border: 1px solid #333;
-    color: #fff;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    transition: border 0.3s;
+  background: #000;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border 0.3s;
 }
 
 .profile-input:focus {
-    border-color: var(--primary);
-    outline: none;
+  border-color: var(--primary);
+  outline: none;
 }
 
 /* Practice navigation buttons in single line */
-.practice-nav{
-  display:flex;
-  justify-content:center;
-  gap:10px;
+.practice-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
-.practice-nav button{
-  width:auto !important;
-  flex:0 0 auto;
-  padding:8px 16px;
+.practice-nav button {
+  width: auto !important;
+  flex: 0 0 auto;
+  padding: 8px 16px;
 }
+
+/* ===== HR INTERVIEW PAGE ===== */
 .hr-container {
   max-width: 800px;
   margin: 50px 0 0 80px;
   padding: 20px;
 }
+
 .hr-btn {
-  width: 300px;            /* bigger width */
-  padding: 16px 0;         /* taller button */
-  font-size: 16px;         /* bigger text */
-
+  width: 300px;
+  padding: 16px 0;
+  font-size: 16px;
   border-radius: 12px;
-
   display: block;
-  margin: 25px auto;       /* center it */
-
+  margin: 25px auto;
   font-weight: 600;
 }
+
 .hr-label {
-  color: #aaa;   /* light gray */
-  font-size: 14px;
-}
-.hr-textarea {
-  width: 100%;
-  background: #000;
-  color: #fff;
-  border: 1px solid #333;
-  padding: 12px;
-  border-radius: 10px;
+  color: #aaa;
   font-size: 14px;
 }
 
-.hr-textarea::placeholder {
-  color: #777;
+/* HR textarea – full-width, taller, and styled */
+#hrAnswer,
+.hr-textarea {
+  width: 100%;
+  min-height: 160px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  resize: vertical;
 }
-/* Right align container */
+
+#hrAnswer::placeholder,
+.hr-textarea::placeholder {
+  color: #666;
+}
+
+#hrAnswer:focus,
+.hr-textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(217, 255, 0, 0.1);
+}
+
+/* HR question text */
+#hrQuestion {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* HR feedback text */
+#hrFeedback {
+  color: #ccc;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 16px;
+  white-space: pre-line;
+}
+
+/* Next button alignment */
 .next-btn-container {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
 }
 
-/* Small button */
 .next-btn {
   width: auto !important;
-  padding: 10px 20px;
+  padding: 10px 24px;
   font-size: 14px;
   border-radius: 8px;
 }
-#nextBtn {
-  margin-left: auto !important;
-  display: block;
-}
-#nextBtn {
-  margin: 25px 0 0 auto !important;   /* pushes to right */
-  display: block;
-}
+
 #nextBtn {
   margin: 15px 0 0 auto !important;
+  display: block;
 }
+
+/* Job label */
 .job-label {
-  color: #aaa;   /* grey color */
-  font-size: 14px;
-}
-.job-label {
-  color: #aaa;   /* grey color */
-  font-size: 14px;
-}
-/* ===== AI SKILL SUGGESTION CLEAN UI (NO BODY CLASS NEEDED) ===== */
-
-/* Container */
-.main-container {
-  max-width: 750px;
-  margin: 30px 0 0 40px;
-  padding: 20px;
-}
-
-/* Title */
-.page-title {
-  font-size: 30px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-/* Subtitle */
-.welcome-text {
-  color: #888;
-  font-size: 14px;
-  margin-bottom: 25px;
-}
-
-/* Score */
-.score-box {
-  font-size: 15px;
   color: #aaa;
-  margin-bottom: 25px;
-}
-
-/* Sections layout */
-.ai-clean {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
-/* Each section */
-.ai-section {
-  padding-bottom: 15px;
-  border-bottom: 1px solid #1a1a1a;
-}
-
-/* Section headings */
-.ai-section h2 {
-  color: #D9FF00;
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-/* Content */
-.ai-section div {
-  color: #ccc;
   font-size: 14px;
-  line-height: 1.8;
-  white-space: pre-line;
 }
 
-/* List spacing (if used) */
-.ai-section li {
-  margin-bottom: 6px;
-}
-
-/* Back button container */
-.back-btn-box {
-  margin-top: 30px;
-  text-align: left;
-}
-
-/* Small button */
-.back-btn-box .btn-primary {
-  padding: 8px 16px;
-  font-size: 13px;
-  border-radius: 8px;
-}
+/* Input box used in HR page */
 .input-box {
   width: 100%;
   padding: 14px;
@@ -1014,9 +1020,27 @@ input:focus, select:focus {
   color: white;
   border: 1px solid #333;
   margin-bottom: 15px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
 }
-/* ===== FORCE FIX LOGOUT BUTTON (HR PAGE) ===== */
 
+.input-box:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(217, 255, 0, 0.1);
+}
+
+/* Labels on the HR start section */
+#startSection label {
+  display: block;
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  margin-top: 15px;
+}
+
+/* ===== FORCE FIX LOGOUT BUTTON ===== */
 .sidebar .logout-btn {
   background: transparent !important;
   border: none !important;
@@ -1030,7 +1054,6 @@ input:focus, select:focus {
   box-shadow: none !important;
 }
 
-/* Remove any white background from button */
 .sidebar .logout-btn,
 .sidebar .logout-btn:focus,
 .sidebar .logout-btn:active {
@@ -1038,12 +1061,10 @@ input:focus, select:focus {
   outline: none !important;
 }
 
-/* Icon color */
 .sidebar .logout-btn i {
   color: #ff4444 !important;
 }
 
-/* Hover */
 .sidebar .logout-btn:hover {
   background: rgba(255, 68, 68, 0.1) !important;
   border-radius: 8px;
@@ -1054,4 +1075,100 @@ input:focus, select:focus {
   width: auto !important;
   flex: 1;
   padding: 14px 20px;
+}
+
+/* ===== AI SKILL SUGGESTION CLEAN UI ===== */
+.main-container {
+  max-width: 750px;
+  margin: 30px 0 0 40px;
+  padding: 20px;
+}
+
+.score-box {
+  font-size: 15px;
+  color: #aaa;
+  margin-bottom: 25px;
+}
+
+.ai-clean {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.ai-section {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.ai-section h2 {
+  color: #D9FF00;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.ai-section div {
+  color: #ccc;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.ai-section li {
+  margin-bottom: 6px;
+}
+
+.back-btn-box {
+  margin-top: 30px;
+  text-align: left;
+}
+
+.back-btn-box .btn-primary {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+/* --- AI AVATAR ANIMATIONS --- */
+@keyframes alexBlink {
+  0%, 96%, 100% { transform: scaleY(1); }
+  98% { transform: scaleY(0.1); }
+}
+
+@keyframes alexSpeak {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(2.5); }
+}
+
+@keyframes alexBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.alex-eye {
+  transform-origin: center;
+  animation: alexBlink 4s infinite;
+}
+
+.alex-speaking #alexMouthGroup {
+  animation: alexSpeak 0.25s infinite alternate;
+}
+
+.alex-speaking {
+  animation: alexBob 2s infinite ease-in-out;
+}
+
+.alex-speaking #alexMicIcon {
+  color: #00FF94 !important;
+}
+
+@keyframes redPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+}
+
+.pulse-anim {
+  animation: redPulse 1.5s infinite;
 }
