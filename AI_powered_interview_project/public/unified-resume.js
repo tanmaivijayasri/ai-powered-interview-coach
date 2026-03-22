@@ -29,7 +29,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function handleUnifiedFile(files) {
   const errorBox = document.getElementById('unifiedErrorBox');
-  if(errorBox) errorBox.style.display = 'none';
+  if(errorBox) errorBox.style.display = 'none'; // Since errorBox doesn't have .hidden initially, this works, but let's be safe
+  if(errorBox) errorBox.classList.add('hidden');
 
   if (files && files.length > 0) {
     unifiedSelectedFile = files[0];
@@ -49,9 +50,9 @@ async function analyzeUnifiedResume() {
 
   btn.disabled = true;
   btn.innerText = "Analyzing...";
-  loading.style.display = 'block';
-  result.style.display = 'none';
-  errorBox.style.display = 'none';
+  loading.classList.remove('hidden');
+  result.classList.add('hidden');
+  errorBox.classList.add('hidden');
 
   const formData = new FormData();
   formData.append('resume', unifiedSelectedFile);
@@ -72,11 +73,11 @@ async function analyzeUnifiedResume() {
     } catch (e) {
       throw new Error("Invalid server response");
     }
-    loading.style.display = 'none';
+    loading.classList.add('hidden');
 
     if (!res.ok || !data.success) {
       errorText.innerText = data.error || "Invalid resume file. Please upload a proper resume.";
-      errorBox.style.display = 'block';
+      errorBox.classList.remove('hidden');
       btn.disabled = false;
       btn.innerText = "Analyze Resume";
       return;
@@ -140,17 +141,17 @@ async function analyzeUnifiedResume() {
         roadmapBox.innerHTML = '<li style="color: #666;">Looking good! You are well prepared.</li>';
     }
 
-    result.style.display = 'block';
+    result.classList.remove('hidden');
     
     // re-enable button for new uploads
     btn.disabled = false;
     btn.innerText = "Analyze Resume";
     
   } catch (err) {
-    loading.style.display = 'none';
+    loading.classList.add('hidden');
     btn.disabled = false;
     btn.innerText = "Analyze Resume";
     errorText.innerText = "Application Error: " + err.message;
-    errorBox.style.display = 'block';
+    errorBox.classList.remove('hidden');
   }
 }
