@@ -78,7 +78,8 @@ async function submitHRAnswer() {
       },
       body: JSON.stringify({
         question,
-        answer
+        answer,
+        email: localStorage.getItem("userEmail")
       })
     });
 

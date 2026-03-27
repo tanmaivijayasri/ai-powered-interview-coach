@@ -12,6 +12,7 @@
 
   <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
   <script src="/socket.io/socket.io.js"></script>
 
   <link rel="stylesheet" href="styles.css">
@@ -526,7 +527,7 @@
           difficult coding problems. The AI will analyze your communication style and traits.</p>
 
         <div style="margin-bottom: 1.5rem;">
-          <textarea id="persInput" placeholder="Hi, I am an experienced developer..." rows="5"
+          <textarea id="persInput" placeholder="Hi, I am an experienced developer..." rows="5" oninput="if(typeof handlePersInput === 'function') handlePersInput()"
             style="width: 100%; padding: 0.75rem; background: #000; border: 1px solid #333; color: white; border-radius: 8px; resize: none;"></textarea>
         </div>
 
@@ -550,7 +551,13 @@
           <p id="persSummary" style="color: #ccc; margin-bottom: 2rem; line-height: 1.6;"></p>
 
           <h4 style="margin-bottom: 1rem; color: #fff;">Key Traits:</h4>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;" id="persTraits">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;">
+            <div style="width: 100%; max-width: 350px; margin: 0 auto;">
+              <canvas id="persChart"></canvas>
+            </div>
+            <div style="width: 100%;">
+              <canvas id="persBarChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -561,22 +568,8 @@
       <div style="background: #111; padding: 2rem; border-radius: 16px; border: 1px solid #222;">
         <h3 style="margin-bottom: 2rem;">Interview History</h3>
 
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; text-align: left;">
-            <thead>
-              <tr style="border-bottom: 1px solid #222; color: #888; font-size: 0.9rem;">
-                <th style="padding: 1rem;">Date</th>
-                <th style="padding: 1rem;">Question</th>
-                <th style="padding: 1rem;">Your Answer</th>
-                <th style="padding: 1rem;">Score</th>
-                <th style="padding: 1rem;">Category</th>
-                <th style="padding: 1rem;">Time</th>
-              </tr>
-            </thead>
-            <tbody id="historyTableBody">
-              <!-- Rows will be injected here -->
-            </tbody>
-          </table>
+        <div id="historyAccordionContainer">
+          <!-- Accordion Groups will be injected here -->
         </div>
       </div>
     </section>
@@ -932,6 +925,8 @@
         'dashboard': 'Overview',
         'resume': 'Resume Analysis',
         'interview': 'Mock Interview',
+        'generator': 'Question Generator',
+        'personality': 'Personality Analyzer',
         'analytics': 'Performance History',
         'settings': 'Settings & Profile',
         'hr': 'HR Interview'
@@ -941,7 +936,7 @@
       // 4. Update Nav Active State
       document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
       // Simple heuristic for nav highlighting
-      const navItems = ['dashboard', 'resume', 'interview', 'generator', 'personality', 'analytics', 'settings'];
+      const navItems = ['dashboard', 'resume', 'interview', 'hr', 'generator', 'personality', 'analytics', 'settings'];
       const navIndex = navItems.indexOf(viewId);
       if (navIndex >= 0) document.querySelectorAll(".nav-item")[navIndex].classList.add("active");
 
@@ -1052,7 +1047,7 @@
             : "--";
 
           /* ✅ ADD HERE */
-          const hr = localStorage.getItem("hrAvgScore");
+          const hr = data.hrScore;
 
           if (hr) {
             document.getElementById("hrScore").innerText = hr + "/10";
@@ -1082,38 +1077,101 @@
     }
 
     async function loadHistory() {
-      const tbody = document.getElementById("historyTableBody");
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">Loading history...</td></tr>';
+      const container = document.getElementById("historyAccordionContainer");
+      if (!container) return;
+      
+      container.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;"><i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><p style="margin-top:1rem;">Loading history...</p></div>';
 
       try {
         const res = await apiFetch(`${API}/interview-history/${email}`);
         const data = await res.json();
 
         if (!data.success || data.history.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#666;">No interview history found. Start a practice session!</td></tr>';
+          container.innerHTML = '<div style="text-align:center; padding:2rem; background:#111; border:1px solid #333; border-radius:12px; color:#666;">No interview history found. Start a practice session!</div>';
           return;
         }
 
-        tbody.innerHTML = data.history.map(h => {
-          const date = new Date(h.timestamp).toLocaleDateString();
-          const qText = h.question.length > 50 ? h.question.substring(0, 50) + "..." : h.question;
-          const aText = h.userAnswer ? (h.userAnswer.length > 50 ? h.userAnswer.substring(0, 50) + "..." : h.userAnswer) : "N/A";
-          const scoreColor = h.score >= 8 ? "#D9FF00" : (h.score >= 5 ? "#FFB800" : "#ff4444");
+        // Group by Date + sessionMode (Module)
+        const groupedHistory = data.history.reduce((acc, h) => {
+          const date = new Date(h.timestamp).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+          const mode = (h.sessionMode || "General Mode").toUpperCase();
+          const groupKey = `${date} | ${mode}`;
+          
+          if (!acc[groupKey]) {
+            acc[groupKey] = [];
+          }
+          acc[groupKey].push(h);
+          return acc;
+        }, {});
+
+        const outputHtml = Object.entries(groupedHistory).map(([groupTitle, items], mIndex) => {
+          const itemsHtml = items.map((h, iIndex) => {
+            const timeStr = new Date(h.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const scoreColor = h.score >= 8 ? "#D9FF00" : (h.score >= 5 ? "#00FF94" : "#ff4444");
+            const qPreview = h.question && h.question.length > 60 ? h.question.substring(0, 60) + "..." : (h.question || "No Question");
+            const uid = `acc-${mIndex}-${iIndex}`;
+
+            return `
+              <div style="border-bottom: 1px solid #222; background: #1a1a1a;">
+                <div style="padding: 1.25rem 1.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;" onmouseover="this.style.background='#161616'" onmouseout="this.style.background='transparent'" onclick="document.getElementById('${uid}').classList.toggle('hidden');">
+                  <div style="display:flex; flex-direction:column; gap:0.25rem; flex:1; min-width:0; padding-right:1rem;">
+                    <div style="color:#888; font-size:0.85rem; font-weight:600;">${timeStr} &nbsp;•&nbsp; <span style="background:#222; border:1px solid #333; padding:2px 6px; border-radius:4px; font-weight:normal; letter-spacing:0.5px;">${(h.category || 'Tech').toUpperCase()}</span></div>
+                    <div style="color:#fff; font-size:1rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${h.question}">${qPreview}</div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:1.5rem;">
+                    <span style="font-weight: 800; color: ${scoreColor}; font-size: 1.25rem; background:#000; padding:4px 8px; border-radius:6px; border:1px solid #222;">${h.score}/10</span>
+                    <i class="fa-solid fa-chevron-down" style="color: #666; font-size: 1.1rem;"></i>
+                  </div>
+                </div>
+                
+                <div id="${uid}" class="hidden" style="padding: 1.5rem; background: #111; border-top: 1px dashed #333;">
+                  <div style="margin-bottom: 1.5rem;">
+                    <h5 style="color:#888; margin-bottom:0.5rem; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-circle-question" style="color:var(--primary); margin-right:4px;"></i> Question</h5>
+                    <p style="color:#fff; line-height:1.6; font-size:0.95rem;">${h.question}</p>
+                  </div>
+                  
+                  <div style="margin-bottom: 0;">
+                    <h5 style="color:#888; margin-bottom:0.5rem; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-user-pen" style="color:#ccc; margin-right:4px;"></i> Your Answer</h5>
+                    <p style="color:#ccc; font-style:italic; line-height:1.6; font-size:0.95rem; background:#0a0a0a; padding:1.25rem; border-radius:8px; border:1px solid #1a1a1a; margin:0;">
+                      "${h.userAnswer || 'No answer provided'}"
+                    </p>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+          const [parsedDate, parsedModule] = groupTitle.split(" | ");
 
           return `
-            <tr style="border-bottom: 1px solid #1a1a1a; transition: background 0.2s;" onmouseover="this.style.background='#161616'" onmouseout="this.style.background='transparent'">
-              <td style="padding: 1rem; color: #888;">${date}</td>
-              <td style="padding: 1rem; color: #ccc;" title="${h.question}">${qText}</td>
-              <td style="padding: 1rem; color: #888; font-style: italic;" title="${h.userAnswer || ''}">${aText}</td>
-              <td style="padding: 1rem; font-weight: 600; color: ${scoreColor}">${h.score}/10</td>
-              <td style="padding: 1rem;"><span class="badge" style="background:#222; border:1px solid #333; color:#aaa; padding:2px 8px; border-radius:4px; font-size:0.8rem;">${h.category || 'Tech'}</span></td>
-              <td style="padding: 1rem; color: #666;">${h.timeTaken || 0}s</td>
-            </tr>
+            <div style="margin-bottom: 2rem; border: 1px solid #333; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+              <div onclick="document.getElementById('group-${mIndex}').classList.toggle('hidden'); document.getElementById('icon-${mIndex}').classList.toggle('fa-chevron-down'); document.getElementById('icon-${mIndex}').classList.toggle('fa-chevron-up');" style="background: linear-gradient(90deg, #1f1f1f 0%, #111 100%); padding: 1.25rem 1.75rem; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='linear-gradient(90deg, #2a2a2a 0%, #151515 100%)'" onmouseout="this.style.background='linear-gradient(90deg, #1f1f1f 0%, #111 100%)'">
+                <h4 style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing:0.5px; display: flex; align-items: center;">
+                  <i class="fa-solid fa-calendar-day" style="color:#888; font-size: 1rem; margin-right:10px;"></i>
+                  <span style="color:#ccc;">${parsedDate}</span>
+                  <span style="color:#555; margin:0 10px;">|</span>
+                  <i class="fa-solid fa-layer-group" style="color:var(--primary); font-size: 1rem; margin-right:8px;"></i>
+                  ${parsedModule} MODULE
+                </h4>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <span style="color:#888; font-size:0.85rem; font-weight:500; background:#000; padding:6px 12px; border-radius:20px; border:1px solid #222;">
+                    ${items.length} Record${items.length > 1 ? 's' : ''}
+                  </span>
+                  <i id="icon-${mIndex}" class="fa-solid fa-chevron-down" style="color:#888;"></i>
+                </div>
+              </div>
+              <div id="group-${mIndex}" class="hidden" style="background: transparent;">
+                ${itemsHtml}
+              </div>
+            </div>
           `;
         }).join("");
 
+        container.innerHTML = outputHtml;
+
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#ff4444;">Failed to load history.</td></tr>';
+        console.error(e);
+        container.innerHTML = '<div style="text-align:center; padding:2rem; background:#111; border:1px solid #ff4444; border-radius:12px; color:#ff4444;"><i class="fa-solid fa-circle-exclamation" style="margin-right:8px;"></i>Failed to load history.</div>';
       }
     }
 
@@ -1584,7 +1642,7 @@
           socket.emit("chatMessage", {
             email,
             message: text,
-            context: { practice: true, mode: "practice" },
+            context: { practice: true, mode: "practice", skill: document.getElementById("customSkill").value || "General Practice" },
             question: practiceQuestions[practiceIndex]
           });
         }
@@ -1659,13 +1717,28 @@
       }
     }
 
+    let persChartInstance = null;
+    let persBarChartInstance = null;
+    let _persDebounceTimeout = null;
+
+    Chart.register(ChartDataLabels);
+
+    function handlePersInput() {
+      if (_persDebounceTimeout) clearTimeout(_persDebounceTimeout);
+      _persDebounceTimeout = setTimeout(() => {
+        const text = document.getElementById("persInput").value;
+        if (text.length >= 20) {
+          analyzePersonality();
+        }
+      }, 2000);
+    }
+
     async function analyzePersonality() {
       const textInput = document.getElementById("persInput").value;
       const btn = document.getElementById("persBtn");
       const loading = document.getElementById("persLoading");
       const resultBox = document.getElementById("persResultsBox");
       const summary = document.getElementById("persSummary");
-      const traitsBox = document.getElementById("persTraits");
 
       if (textInput.length < 20) {
         showToast("Please enter at least 20 characters.");
@@ -1685,17 +1758,98 @@
         const data = await res.json();
         if (data.success) {
           summary.innerText = data.analysis.summary;
-          traitsBox.innerHTML = Object.entries(data.analysis.traits).map(([trait, score]) => `
-            <div style="background: #000; padding: 1rem; border: 1px solid #222; border-radius: 8px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem;">
-                <span style="color: #888;">${trait}</span>
-                <span style="color: var(--primary); font-weight: 600;">${score}%</span>
-              </div>
-              <div style="height: 4px; background: #111; border-radius: 2px; overflow: hidden;">
-                <div style="height: 100%; width: ${score}%; background: var(--primary);"></div>
-              </div>
-            </div>
-          `).join("");
+          
+          const traitLabels = Object.keys(data.analysis.traits);
+          const traitData = Object.values(data.analysis.traits);
+          
+          const ctxPie = document.getElementById('persChart').getContext('2d');
+          const ctxBar = document.getElementById('persBarChart').getContext('2d');
+          
+          if (persChartInstance) persChartInstance.destroy();
+          if (persBarChartInstance) persBarChartInstance.destroy();
+          
+          persChartInstance = new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+              labels: traitLabels,
+              datasets: [{
+                data: traitData,
+                backgroundColor: [
+                  'rgba(0, 255, 148, 0.8)',
+                  'rgba(217, 255, 0, 0.8)',
+                  'rgba(255, 68, 68, 0.8)',
+                  'rgba(0, 204, 255, 0.8)'
+                ],
+                borderColor: '#111',
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: { color: '#ccc', padding: 20 }
+                },
+                datalabels: {
+                  color: '#111',
+                  font: { weight: 'bold', size: 14 },
+                  formatter: (value) => value + '%'
+                }
+              }
+            }
+          });
+
+          persBarChartInstance = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+              labels: traitLabels,
+              datasets: [{
+                label: 'Score',
+                data: traitData,
+                backgroundColor: [
+                  'rgba(0, 255, 148, 0.6)',
+                  'rgba(217, 255, 0, 0.6)',
+                  'rgba(255, 68, 68, 0.6)',
+                  'rgba(0, 204, 255, 0.6)'
+                ],
+                borderColor: [
+                  '#00FF94',
+                  '#D9FF00',
+                  '#FF4444',
+                  '#00CCFF'
+                ],
+                borderWidth: 1,
+                borderRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  grid: { color: '#333' },
+                  ticks: { color: '#888' }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: '#ccc' }
+                }
+              },
+              plugins: {
+                legend: { display: false },
+                datalabels: {
+                  anchor: 'end',
+                  align: 'top',
+                  color: '#fff',
+                  font: { weight: 'bold' },
+                  formatter: (value) => value + '%'
+                }
+              }
+            }
+          });
+
           resultBox.classList.remove("hidden");
         } else {
           showToast(data.message || "Failed to analyze personality.");
@@ -1748,6 +1902,9 @@
           const inputElement = document.getElementById(currentMicInputId);
           if (inputElement) {
             inputElement.value = finalTranscriptText + (interimTranscript ? " " + interimTranscript : "");
+            if (currentMicInputId === "persInput" && typeof handlePersInput === 'function') {
+              handlePersInput();
+            }
           }
         }
       };

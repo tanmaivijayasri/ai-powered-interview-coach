@@ -45,6 +45,66 @@ Consistency beats talent. Keep improving every day!
     };
 }
 
+    // --- MODE 0: PERSONALITY ANALYZER ---
+    if (p.includes("analyze this candidate's personality") || p.includes("personality and communication style")) {
+        const inputMatch = prompt.match(/Candidate Input:\s*"?([^]*?)"?\s*Task:/i);
+        const inputText = inputMatch ? inputMatch[1].trim() : prompt;
+        const len = inputText.length;
+        const lowerInput = inputText.toLowerCase();
+        
+        // 1. Gibberish / Single Long String Check
+        if (!lowerInput.includes(" ") && len > 20) {
+            return {
+                summary: "This is a simulated analysis (Smart Mock). The input appears to be an unstructured, continuous block of text without proper spacing.",
+                traits: { Confidence: 10, Clarity: 5, Positivity: 10, ProblemSolving: 5 }
+            };
+        }
+
+        // 2. Lack of Coherent Structure Check (checking for basic vowels or common structural words)
+        const hasVowels = /[aeiouy]/.test(lowerInput);
+        const splitWords = lowerInput.split(/\s+/);
+        const avgWordLen = len / (splitWords.length || 1);
+        
+        if (!hasVowels || avgWordLen > 15 || avgWordLen < 3) {
+            return {
+                summary: "This is a simulated analysis (Smart Mock). The input appears to be randomly typed characters or lacks coherent linguistic structure.",
+                traits: { Confidence: 15, Clarity: 10, Positivity: 20, ProblemSolving: 10 }
+            };
+        }
+
+        let confidence = 65;
+        let clarity = 65;
+        let positivity = 70;
+        let problemSolving = 60;
+
+        if (len > 150) {
+            confidence = 88; clarity = 85; positivity = 90; problemSolving = 85;
+        } else if (len > 70) {
+            confidence = 78; clarity = 75; positivity = 80; problemSolving = 72;
+        }
+
+        if (lowerInput.includes("problem") || lowerInput.includes("solve") || lowerInput.includes("bug") || lowerInput.includes("code")) {
+            problemSolving += 15;
+            clarity += 5;
+        }
+        if (lowerInput.includes("help") || lowerInput.includes("team") || lowerInput.includes("collaborate") || lowerInput.includes("together")) {
+            positivity += 12;
+        }
+        if (lowerInput.includes("confident") || lowerInput.includes("sure") || lowerInput.includes("definitely") || lowerInput.includes("strong")) {
+            confidence += 10;
+        }
+
+        return {
+            summary: "This is a simulated analysis (Smart Mock). The candidate shows adaptability and good communication based on text length and keyword patterns.",
+            traits: {
+                Confidence: Math.min(100, confidence),
+                Clarity: Math.min(100, clarity),
+                Positivity: Math.min(100, positivity),
+                ProblemSolving: Math.min(100, problemSolving)
+            }
+        };
+    }
+
     // --- MODE 1: RESUME ANALYSIS (Server asking to analyze resume) ---
     if (p.includes("analysis of this resume") || p.includes("analyze this resume")) {
         const textLen = p.length;
@@ -89,7 +149,7 @@ Consistency beats talent. Keep improving every day!
     }
 
     // --- MODE 2: EVALUATION (Server asking to score an answer) ---
-    if (p.includes("evaluate this answer") || p.includes("evaluate the candidate’s answer")) {
+    if (p.includes("evaluate this answer") || p.includes("evaluate the candidate's answer") || p.includes("evaluate the candidate’s answer")) {
         console.warn("⚠️ SmartMock returning simulated evaluation feedback.");
 
         // Safely extract the question
@@ -115,6 +175,40 @@ Consistency beats talent. Keep improving every day!
 
         let score = 5;
         let feedback = "Your answer covers the basics, but could include more specific examples.";
+
+        // --- Gibberish / Invalid Input Detection (Global for all modules) ---
+        const words = userAnswer.split(/\s+/).filter(w => w.length > 0);
+        const wordCount = words.length;
+        const avgWordLength = len / (wordCount || 1);
+        const hasVowels = /[aeiouy]/i.test(userAnswer);
+        const uniqueChars = new Set(userAnswer.toLowerCase().replace(/\s/g, '')).size;
+        const repeatedCharRatio = uniqueChars / (userAnswer.replace(/\s/g, '').length || 1);
+
+        // Check for gibberish: no vowels, single repeated chars, very long "words", or too few unique chars
+        const isGibberish = !hasVowels || avgWordLength >= 10 || (repeatedCharRatio < 0.3 && len > 8) || (wordCount <= 2 && len >= 15 && avgWordLength >= 10);
+
+        // Check if answer has real English words (at least some common ones)
+        const commonWords = ['i', 'me', 'the', 'a', 'is', 'am', 'my', 'in', 'to', 'and', 'of', 'for', 'have', 'with', 'that', 'this', 'was', 'are', 'it', 'can', 'will', 'do', 'would', 'work', 'team', 'experience', 'because', 'like', 'think', 'believe', 'yes', 'no', 'code', 'react', 'node', 'java', 'sql', 'aws', 'about', 'myself'];
+        const hasCommonWords = words.some(w => commonWords.includes(w.toLowerCase()));
+
+        // Also check if they just mash random keyboard letters with spaces like "asd adsada a d as d"
+        const isMashedKeyboard = /^[asdfghjklqwertyuiopzxcvbnm\s]+$/i.test(userAnswer) && repeatedCharRatio < 0.4 && !hasCommonWords;
+
+        if (isGibberish || isMashedKeyboard || (!hasCommonWords && wordCount < 3 && len >= 10) || len < 5) {
+            return {
+                reasoning: "Simulated mock reasoning: Answer identified as invalid, random, or gibberish text.",
+                score: 0,
+                feedback: "Your answer appears to be random or unstructured text. Please provide a meaningful response to the question.",
+                category: p.includes("evaluate the candidate") ? "Behavioral" : "Technical"
+            };
+        } else if (!hasCommonWords && wordCount < 5 && len >= 15) {
+            return {
+                reasoning: "Simulated mock reasoning: Answer lacks meaningful content.",
+                score: 1,
+                feedback: "Your answer doesn't seem relevant to the question. Please provide a clear, thoughtful response.",
+                category: p.includes("evaluate the candidate") ? "Behavioral" : "Technical"
+            };
+        }
 
         let isCorrect = false;
         if (questionText.includes("react")) {

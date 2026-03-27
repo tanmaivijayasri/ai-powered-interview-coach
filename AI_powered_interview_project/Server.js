@@ -842,11 +842,17 @@ if (fs.existsSync(hrFile)) {
     // 1. Skill Distribution (Donut Chart)
     const skillCounts = { Technical: 0, Behavioral: 0, SystemDesign: 0 };
     attempts.forEach(a => {
-      // Simple fuzzy match or fallback
-      const cat = a.category || "Technical";
-      if (cat.match(/Behavioral/i)) skillCounts.Behavioral++;
-      else if (cat.match(/System/i)) skillCounts.SystemDesign++;
-      else skillCounts.Technical++;
+      const cat = (a.category || "").toLowerCase();
+      const mode = (a.sessionMode || "").toLowerCase();
+      
+      // HR interview sessions should count as Behavioral
+      if (mode.includes("hr") || mode.includes("behavioral") || cat.match(/behavioral/i)) {
+        skillCounts.Behavioral++;
+      } else if (cat.match(/system/i) || mode.includes("system")) {
+        skillCounts.SystemDesign++;
+      } else {
+        skillCounts.Technical++;
+      }
     });
 
     // 2. Performance Trend (Line Chart - Last 7 entries or days)
@@ -958,7 +964,7 @@ User Answer:
 Instructions for deep evaluation:
 1. Semantic Analysis: Read the candidate's answer carefully. Analyze its length, technical correctness, keywords, and reasoning (because, therefore, for example).
 2. Forced Reasoning: Before scoring, formulate a short internal reasoning explaining your thoughts on the specific content of the answer.
-3. Scoring (0-10): Be realistic. Detailed correct answers with examples deserve 8-10. Short but correct answers deserve 5-7. Vague or incorrect answers deserve 0-4.
+3. Scoring (0-10): Be realistic. Detailed correct answers with examples deserve 8-10. Short but correct answers deserve 5-7. Vague or incorrect answers deserve 0-4. CRITICAL: If the answer is invalid, gibberish, randomly typed characters, or irrelevant text, you MUST give a score of 0 or 1.
 4. Dynamic Feedback: Create completely unique feedback that references specific words or concepts from the candidate's answer.
 5. PROHIBITED: Do not return generic, hardcoded, repetitive text. Your response must change when the answer changes.
 
@@ -1001,7 +1007,7 @@ Return STRICT JSON only:
               score: evaluation.score,
               timeTaken: timeTaken || 0,
               category: evaluation.category || "Technical",
-              sessionMode: context.mode
+              sessionMode: (context.skill && context.skill.trim().length > 0) ? context.skill : (context.mode || "General")
             }).save();
 
             // Gamification Streak Logic (Requires 3 mins / 180s per day)
@@ -1292,10 +1298,11 @@ Return ONLY a JSON array:
     res.json({ success: false });
   }
 });
+
 // ================= EVALUATE HR ANSWER =================
 app.post("/api/hr/evaluate", async (req, res) => {
   try {
-    const { question, answer } = req.body;
+    const { question, answer, email } = req.body;
 
     let score, feedback;
 
@@ -1304,7 +1311,7 @@ app.post("/api/hr/evaluate", async (req, res) => {
       const prompt = `
 You are an HR interviewer.
 
-Evaluate the candidate’s answer.
+Evaluate the candidate's answer.
 
 Question: ${question}
 Answer: ${answer}
@@ -1317,7 +1324,7 @@ Evaluation criteria:
 - Structure
 
 Give:
-1. Score out of 10
+1. Score out of 10. CRITICAL: If the answer is invalid, gibberish, randomly typed characters, or completely irrelevant, you MUST give a score of 0 or 1.
 2. Short constructive feedback (1–2 lines)
 
 Return ONLY JSON:
@@ -1342,7 +1349,26 @@ Return ONLY JSON:
       // ✅ SMART FALLBACK LOGIC
       const len = answer.trim().length;
 
-      if (len > 180) {
+      // Extract gibberish check quickly
+      const words = answer.split(/\s+/).filter(w => w.length > 0);
+      const wordCount = words.length;
+      const avgWordLength = len / (wordCount || 1);
+      const hasVowels = /[aeiouy]/i.test(answer);
+      const uniqueChars = new Set(answer.toLowerCase().replace(/\s/g, '')).size;
+      const repeatedCharRatio = uniqueChars / (answer.replace(/\s/g, '').length || 1);
+
+      const isGibberish = !hasVowels || avgWordLength > 15 || (repeatedCharRatio < 0.15 && len > 10) || (wordCount <= 2 && len > 30 && avgWordLength > 15);
+      
+      const commonWords = ['i', 'the', 'a', 'is', 'am', 'my', 'in', 'to', 'and', 'of', 'for', 'have', 'with', 'that', 'this', 'was', 'are', 'it', 'can', 'will', 'do', 'would', 'work', 'team', 'experience', 'because', 'like', 'think', 'believe'];
+      const hasCommonWords = words.some(w => commonWords.includes(w.toLowerCase()));
+
+      if (isGibberish || (!hasCommonWords && wordCount < 3 && len > 15)) {
+        score = 0;
+        feedback = "Your answer appears to be random or unstructured text. Please provide a meaningful response to the question.";
+      } else if (!hasCommonWords && wordCount < 5 && len > 20) {
+        score = 1;
+        feedback = "Your answer doesn't seem relevant to the question. Please provide a clear, thoughtful response.";
+      } else if (len > 180) {
         score = 9;
         feedback = "Excellent answer with strong clarity and depth.";
       } else if (len > 100) {
@@ -1354,6 +1380,25 @@ Return ONLY JSON:
       } else {
         score = 3;
         feedback = "Too brief. Add more explanation and detail.";
+      }
+    }
+
+    // ✅ SAVE TO InterviewAttempt so it shows in Performance History
+    if (email && InterviewAttempt) {
+      try {
+        await new InterviewAttempt({
+          userEmail: email,
+          question: question,
+          userAnswer: answer,
+          aiFeedback: feedback,
+          score: score,
+          timeTaken: 0,
+          category: "Behavioral",
+          sessionMode: "HR Interview"
+        }).save();
+        console.log("✅ HR answer saved to InterviewAttempt");
+      } catch (saveErr) {
+        console.error("❌ Failed to save HR attempt:", saveErr.message);
       }
     }
 
@@ -1372,9 +1417,14 @@ Return ONLY JSON:
 app.post("/save-hr-score", (req, res) => {
   const { email, score } = req.body;
 
+  const dataDir = "./data";
   const filePath = "./data/hrScores.json";
 
   let data = {};
+
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
 
   if (fs.existsSync(filePath)) {
     data = JSON.parse(fs.readFileSync(filePath));
