@@ -4,6 +4,27 @@ let currentIndex = 0;
 let totalScore = 0;
 let questionLimit = 5;
 let allFeedbacks = []; // NEW — stores all Q&A scores silently
+// ================= MIC SETUP =================
+let recognition;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    
+    // Put speech into textarea
+    const answerBox = document.getElementById("hrAnswer");
+    answerBox.value += transcript + " ";
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Speech error:", event.error);
+  };
+}
 
 // ================= START INTERVIEW =================
 async function startHRInterview() {
@@ -187,5 +208,39 @@ function restartHRInterview() {
   questions = [];
   currentIndex = 0;
   totalScore = 0;
-  allFeedbacks = []; // Reset feedbacks too
+  allFeedbacks = [];
 }
+
+// ================= MIC BUTTON =================
+document.addEventListener("DOMContentLoaded", () => {
+  const micBtn = document.getElementById("micBtn");
+
+  if (micBtn && recognition) {
+    let isListening = false;
+
+    micBtn.addEventListener("click", () => {
+      if (!isListening) {
+        recognition.start();
+        isListening = true;
+        micBtn.innerText = "🔴 Listening... (click to stop)";
+        micBtn.style.background = "#ff4444";
+      } else {
+        recognition.stop();
+        isListening = false;
+        micBtn.innerText = "🎤 Speak Answer";
+        micBtn.style.background = "";
+      }
+    });
+
+    recognition.onend = () => {
+      isListening = false;
+      micBtn.innerText = "🎤 Speak Answer";
+      micBtn.style.background = "";
+    };
+  } else if (micBtn) {
+    // Browser doesn't support speech recognition
+    micBtn.innerText = "🎤 Not supported in this browser";
+    micBtn.disabled = true;
+    micBtn.style.opacity = "0.5";
+  }
+});

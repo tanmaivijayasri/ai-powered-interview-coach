@@ -5,7 +5,6 @@
   <title>HR Interview</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="drawer_styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
@@ -22,52 +21,44 @@
     </div>
 
     <nav class="nav-links">
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=dashboard'">
+        <i class="fa-solid fa-table-columns"></i>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=resume'">
+        <i class="fa-solid fa-file-contract"></i>
+        <span>Resume Analyzer</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=interview'">
+        <i class="fa-solid fa-comments"></i>
+        <span>Mock Interview</span>
+      </a>
+      <a class="nav-item active">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>HR Interview</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=generator'">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Question Generator</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=personality'">
+        <i class="fa-solid fa-face-smile"></i>
+        <span>Personality Analyzer</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=analytics'">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Performance</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=settings'">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
 
-  <a class="nav-item" onclick="window.location.href='dashboard.html?view=dashboard'">
-    <i class="fa-solid fa-table-columns"></i>
-    <span>Dashboard</span>
-  </a>
-
-  <a class="nav-item" onclick="window.location.href='dashboard.html?view=resume'">
-    <i class="fa-solid fa-file-contract"></i>
-    <span>Resume Analyzer</span>
-  </a>
-
-  <a class="nav-item" onclick="window.location.href='dashboard.html?view=interview'">
-    <i class="fa-solid fa-comments"></i>
-    <span>Mock Interview</span>
-  </a>
-
-  <a class="nav-item active">
-    <i class="fa-solid fa-user-tie"></i>
-    <span>HR Interview</span>
-  </a>
-
-  <a class="nav-item" onclick="window.location.href='dashboard.html?view=generator'">
-    <i class="fa-solid fa-wand-magic-sparkles"></i>
-    <span>Question Generator</span>
-  </a>
-
-  <a class="nav-item" onclick="window.location.href='dashboard.html?view=personality'">
-    <i class="fa-solid fa-face-smile"></i>
-    <span>Personality Analyzer</span>
-  </a>
-
-  <a class="nav-item" onclick="window.location.href='dashboard.html?view=analytics'">
-    <i class="fa-solid fa-chart-line"></i>
-    <span>Performance</span>
-  </a>
-
-  <a class="nav-item" onclick="window.location.href='dashboard.html?view=settings'">
-    <i class="fa-solid fa-gear"></i>
-    <span>Settings</span>
-  </a>
-
-</nav>
     <button onclick="logout()" class="logout-btn">
-  <i class="fa-solid fa-right-from-bracket"></i>
-  <span>Logout</span>
-</button>
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span>Logout</span>
+    </button>
   </aside>
 
   <!-- ===== MAIN CONTENT ===== -->
@@ -84,7 +75,7 @@
     <!-- CONTENT -->
     <div style="padding:2rem; max-width:800px;">
 
-      <!-- START -->
+      <!-- START SECTION -->
       <div id="startSection">
 
         <label>Select Job Role</label>
@@ -114,27 +105,37 @@
         </button>
       </div>
 
-      <!-- QUESTION -->
+      <!-- QUESTION SECTION -->
       <div id="hrSection" style="display:none; margin-top:30px;">
 
         <h3 id="hrQuestion"></h3>
 
-        <textarea id="hrAnswer" class="input-box" placeholder="Write your answer..."></textarea>
+        <!-- TEXTAREA -->
+        <textarea id="hrAnswer" class="input-box" placeholder="Write your answer here or use the mic below..."></textarea>
 
-        <button class="btn-primary" onclick="submitHRAnswer()" style="width:100%;">
+        <!-- ✅ MIC BUTTON — placed right below textarea -->
+        <button id="micBtn" class="btn-primary" style="width:100%; margin-top:10px;">
+          🎤 Speak Answer
+        </button>
+
+        <!-- SUBMIT BUTTON — placed below mic -->
+        <button class="btn-primary" onclick="submitHRAnswer()" style="width:100%; margin-top:10px;">
           Submit Answer
         </button>
 
+        <!-- Feedback text -->
         <p id="hrFeedback"></p>
 
+        <!-- Next button — hidden by default -->
         <div class="next-btn-container">
-  <button id="nextBtn" class="btn-primary next-btn" onclick="nextHRQuestion()">
-    Next Question 
-  </button>
-</div>
+          <button id="nextBtn" class="btn-primary next-btn" onclick="nextHRQuestion()" style="display:none;">
+            Next Question
+          </button>
+        </div>
+
       </div>
 
-      <!-- RESULT -->
+      <!-- RESULT SECTION -->
       <div id="hrResult" style="display:none; margin-top:40px; text-align:center;">
         <h2 style="color:#D9FF00;">🎉 Interview Completed</h2>
         <p id="finalScore"></p>
@@ -147,15 +148,15 @@
     </div>
 
   </main>
-  <script>
-function logout() {
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("jwtToken");
-  window.location.href = "index.html";
-}
-</script>
 
-  <!-- JS -->
+  <script>
+    function logout() {
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("jwtToken");
+      window.location.href = "index.html";
+    }
+  </script>
+
   <script src="hr.js"></script>
   <script src="roles.js"></script>
 
