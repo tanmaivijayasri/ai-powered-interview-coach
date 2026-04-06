@@ -14,21 +14,36 @@ let warningTimeout = null;
 let lastPositions = null;
 let tabSwitchCount = 0;
 let isProctoring = false;
+let currentConfidence = 100;
+let totalConfidence = 0;
+let confidenceChecks = 0;
 // ================= MIC SETUP =================
 let recognition;
+let finalTranscript = '';
 
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.continuous = false;
-  recognition.interimResults = false;
+  recognition.continuous = true;
+  recognition.interimResults = true;
   recognition.lang = 'en-US';
 
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    
-    // Put speech into textarea
+  recognition.onstart = function() {
     const answerBox = document.getElementById("hrAnswer");
-    answerBox.value += transcript + " ";
+    finalTranscript = answerBox.value ? answerBox.value + (answerBox.value.endsWith(' ') ? '' : ' ') : '';
+  };
+
+  recognition.onresult = function(event) {
+    let interimTranscript = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript + " ";
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+    
+    const answerBox = document.getElementById("hrAnswer");
+    answerBox.value = finalTranscript + interimTranscript;
   };
 
   recognition.onerror = function(event) {
@@ -72,7 +87,8 @@ function startRecording() {
 
   const preview = document.getElementById("cameraPreview");
   preview.srcObject = cameraStream;
-  preview.style.display = "block";
+  const container = document.getElementById("cameraContainer");
+  if (container) container.style.display = "block";
 
   const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
     ? "video/webm;codecs=vp9"
@@ -114,9 +130,10 @@ function stopRecording() {
     mediaRecorder.stop();
   }
 
+  const container = document.getElementById("cameraContainer");
+  if (container) container.style.display = "none";
   const preview = document.getElementById("cameraPreview");
-  preview.style.display = "none";
-  preview.srcObject = null;
+  if (preview) preview.srcObject = null;
 }
 
 // ================= STOP CAMERA =================
@@ -133,6 +150,26 @@ function stopCamera() {
 
 // ================= START INTERVIEW =================
 // ================= PROCTORING SYSTEM =================
+
+// --- Update Confidence UI ---
+function updateConfidenceUI() {
+  const bar = document.getElementById("confidenceBar");
+  const text = document.getElementById("confidenceText");
+  if (!bar || !text) return;
+  
+  currentConfidence = Math.max(0, Math.min(100, currentConfidence));
+  
+  text.innerText = Math.round(currentConfidence) + "%";
+  bar.style.width = currentConfidence + "%";
+  
+  if (currentConfidence >= 80) {
+    bar.style.backgroundColor = "#00FF94"; // Green
+  } else if (currentConfidence >= 50) {
+    bar.style.backgroundColor = "#FFB800"; // Yellow
+  } else {
+    bar.style.backgroundColor = "#ff4444"; // Red
+  }
+}
 
 // --- Show Warning ---
 function showWarning(message) {
@@ -153,7 +190,7 @@ function showWarning(message) {
 
 // --- Load Face API Models ---
 async function loadFaceModels() {
-  const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
+  const MODEL_URL = "https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights";
   try {
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
@@ -176,33 +213,43 @@ async function checkFace() {
 
   try {
     const detections = await faceapi
-      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3 }))
       .withFaceLandmarks();
 
     // No face detected
     if (detections.length === 0) {
       showWarning("⚠️ No face detected! Please ensure your face is visible.");
+      currentConfidence -= 10;
+      updateConfidenceUI();
       return;
     }
 
     // Multiple people detected
     if (detections.length > 1) {
       showWarning("⚠️ Multiple people detected! Only one person should be present.");
+      currentConfidence -= 5;
+      updateConfidenceUI();
       return;
     }
 
-    // Looking away detection — check nose position
+    // Looking away detection — check nose position and face bounds
     const landmarks = detections[0].landmarks;
     const nose = landmarks.getNose()[0];
     const jaw = landmarks.getJawOutline();
     const faceWidth = jaw[16].x - jaw[0].x;
     const faceCenter = jaw[0].x + faceWidth / 2;
     const noseOffset = Math.abs(nose.x - faceCenter);
-    const lookAwayThreshold = faceWidth * 0.25;
+    const lookAwayThreshold = faceWidth * 0.40; // Increased tolerance
 
+    // Eye tracking inference: if head pose indicates looking away
     if (noseOffset > lookAwayThreshold) {
       showWarning("👀 Please look at the screen! Avoid looking away.");
+      currentConfidence -= 5;
+    } else {
+      // Regain confidence slightly if focused
+      if (currentConfidence < 100) currentConfidence += 2;
     }
+    updateConfidenceUI();
 
   } catch (err) {
     console.error("Face check error:", err);
@@ -218,7 +265,7 @@ async function checkMovement() {
 
   try {
     const detections = await faceapi
-      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3 }));
 
     if (detections.length === 0) return;
 
@@ -229,9 +276,14 @@ async function checkMovement() {
       const deltaX = Math.abs(currentPos.x - lastPositions.x);
       const deltaY = Math.abs(currentPos.y - lastPositions.y);
 
-      // If moved more than 60px suddenly = unusual movement
-      if (deltaX > 60 || deltaY > 60) {
+      // Dynamic threshold: 15% of frame (prevents false positives on HD webcams)
+      const limitX = (video.videoWidth * 0.15) || 100;
+      const limitY = (video.videoHeight * 0.15) || 100;
+
+      if (deltaX > limitX || deltaY > limitY) {
         showWarning("🚨 Unusual movement detected! Please stay still and focused.");
+        currentConfidence -= 8;
+        updateConfidenceUI();
       }
     }
 
@@ -265,6 +317,10 @@ async function startProctoring() {
   isProctoring = true;
   lastPositions = null;
   tabSwitchCount = 0;
+  currentConfidence = 100;
+  totalConfidence = 0;
+  confidenceChecks = 0;
+  updateConfidenceUI();
 
   // Load face models first
   const modelsLoaded = await loadFaceModels();
@@ -278,6 +334,8 @@ async function startProctoring() {
     proctoringInterval = setInterval(async () => {
       await checkFace();
       await checkMovement();
+      totalConfidence += currentConfidence;
+      confidenceChecks++;
     }, 3000);
   } else {
     console.warn("⚠️ Face detection disabled — models failed to load");
@@ -444,10 +502,29 @@ async function showResult() {
   const avg = (totalScore / questions.length).toFixed(1);
   const avgColor = avg >= 7 ? "#00FF94" : avg >= 5 ? "#FFB800" : "#ff4444";
 
-  // Show average score
+  // Calculate final confidence score
+  let finalAvgConfidence = 0;
+  if (confidenceChecks > 0) {
+    finalAvgConfidence = Math.round(totalConfidence / confidenceChecks);
+  } else {
+    finalAvgConfidence = isCameraOn ? Math.round(currentConfidence) : 0;
+  }
+  const confColor = finalAvgConfidence >= 80 ? "#00FF94" : finalAvgConfidence >= 50 ? "#FFB800" : "#ff4444";
+
+  // Show averages
   document.getElementById("finalScore").innerHTML =
-    `<span style="font-size:2.5rem;font-weight:800;color:${avgColor}">${avg}/10</span><br>
-     <span style="color:#888;">Average Score</span>`;
+    `<div style="display:flex; justify-content:center; gap:3rem;">
+       <div>
+         <span style="font-size:2.5rem;font-weight:800;color:${avgColor}">${avg}/10</span><br>
+         <span style="color:#888;">Average Score</span>
+       </div>
+       ${isCameraOn ? `
+       <div>
+         <span style="font-size:2.5rem;font-weight:800;color:${confColor}">${finalAvgConfidence}%</span><br>
+         <span style="color:#888;">Confidence Level</span>
+       </div>
+       ` : ''}
+     </div>`;
 
   // Build full breakdown
   let breakdown = `<div style="margin-top:2rem;text-align:left;">
@@ -536,9 +613,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     recognition.onend = () => {
-      isListening = false;
-      micBtn.innerText = "🎤 Speak Answer";
-      micBtn.style.background = "";
+      // If it stops due to pause but user didn't click stop, restart it
+      if (isListening) {
+        try { recognition.start(); } catch(e){}
+      } else {
+        micBtn.innerText = "🎤 Speak Answer";
+        micBtn.style.background = "";
+      }
     };
   } else if (micBtn) {
     // Browser doesn't support speech recognition
