@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Recordings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="drawer_styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <div class="logo-icon"><i class="fa-solid fa-brain"></i></div>
+      <span class="logo-text">InterviewCoach</span>
+    </div>
+
+    <nav class="nav-links">
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=dashboard'">
+        <i class="fa-solid fa-table-columns"></i>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=resume'">
+        <i class="fa-solid fa-file-contract"></i>
+        <span>Resume Analyzer</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=interview'">
+        <i class="fa-solid fa-comments"></i>
+        <span>Mock Interview</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='hr.html'">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>HR Interview</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=generator'">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Question Generator</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=personality'">
+        <i class="fa-solid fa-face-smile"></i>
+        <span>Personality Analyzer</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=analytics'">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Performance</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='dashboard.html?view=settings'">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+      <!-- ACTIVE -->
+      <a class="nav-item active">
+        <i class="fa-solid fa-video"></i>
+        <span>My Recordings</span>
+      </a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span>Logout</span>
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <header class="top-header">
+      <div>
+        <h1 class="page-title">My Recordings</h1>
+        <p class="welcome-text">Watch your past interview recordings 🎥</p>
+      </div>
+    </header>
+
+    <div style="padding:2rem;">
+
+      <!-- LOADING -->
+      <div id="loadingBox" style="text-align:center; padding:3rem; color:#888;">
+        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem;"></i>
+        <p style="margin-top:1rem;">Loading recordings...</p>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div id="emptyBox" style="display:none; text-align:center; padding:3rem;
+        border:2px dashed #333; border-radius:16px;">
+        <i class="fa-solid fa-video-slash" style="font-size:3rem; color:#444;"></i>
+        <h3 style="margin-top:1rem; color:#666;">No recordings yet</h3>
+        <p style="color:#555;">Complete an HR interview with camera ON to see recordings here.</p>
+        <button class="btn-primary" onclick="window.location.href='hr.html'"
+          style="margin-top:1rem;">
+          Go to HR Interview
+        </button>
+      </div>
+
+      <!-- RECORDINGS GRID -->
+      <div id="recordingsGrid" style="display:none;
+        display:grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap:1.5rem;">
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- VIDEO MODAL -->
+  <div id="videoModal" style="display:none; position:fixed; top:0; left:0;
+    width:100%; height:100%; background:rgba(0,0,0,0.9);
+    z-index:9999; align-items:center; justify-content:center;">
+    <div style="position:relative; width:90%; max-width:800px;">
+
+      <!-- Close Button -->
+      <button onclick="closeModal()"
+        style="position:absolute; top:-40px; right:0;
+        background:transparent; border:none; color:#fff;
+        font-size:1.5rem; cursor:pointer;">
+        <i class="fa-solid fa-xmark"></i> Close
+      </button>
+
+      <!-- Video Player -->
+      <video id="modalVideo" controls autoplay
+        style="width:100%; border-radius:12px; max-height:70vh;">
+      </video>
+
+      <!-- Filename -->
+      <p id="modalFileName"
+        style="color:#888; font-size:0.85rem; margin-top:0.5rem; text-align:center;">
+      </p>
+
+    </div>
+  </div>
+
+  <script>
+    const email = localStorage.getItem("userEmail");
+    if (!email) window.location.href = "index.html";
+
+    function logout() {
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("jwtToken");
+      window.location.href = "index.html";
+    }
+
+    // ===== LOAD RECORDINGS =====
+    async function loadRecordings() {
+      try {
+        const res = await fetch(`http://localhost:3000/api/recordings/${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        document.getElementById("loadingBox").style.display = "none";
+
+        if (!data.success || data.files.length === 0) {
+          document.getElementById("emptyBox").style.display = "block";
+          return;
+        }
+
+        const grid = document.getElementById("recordingsGrid");
+        grid.style.display = "grid";
+
+        data.files.forEach((filename, index) => {
+          const url = `http://localhost:3000/recordings/${filename}`;
+
+          // Format date from filename if possible
+          const label = `Recording ${index + 1}`;
+          const shortName = filename.length > 30
+            ? filename.substring(0, 30) + "..."
+            : filename;
+
+          grid.innerHTML += `
+            <div style="background:#111; border:1px solid #222;
+              border-radius:16px; overflow:hidden; cursor:pointer;
+              transition:border 0.2s;"
+              onmouseover="this.style.border='1px solid #D9FF00'"
+              onmouseout="this.style.border='1px solid #222'"
+              onclick="openModal('${url}', '${filename}')">
+
+              <!-- Thumbnail placeholder -->
+              <div style="background:#1a1a1a; height:180px;
+                display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-circle-play"
+                  style="font-size:3rem; color:#D9FF00;"></i>
+              </div>
+
+              <!-- Info -->
+              <div style="padding:1rem;">
+                <p style="color:#fff; font-weight:600; margin-bottom:4px;">
+                  ${label}
+                </p>
+                <p style="color:#555; font-size:0.78rem; word-break:break-all;">
+                  ${shortName}
+                </p>
+                <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+                  <button onclick="event.stopPropagation(); openModal('${url}', '${filename}')"
+                    class="btn-primary"
+                    style="flex:1; padding:0.5rem; font-size:0.85rem;">
+                    ▶ Play
+                  </button>
+                  <button onclick="event.stopPropagation(); deleteRecording('${filename}', this)"
+                    style="background:#1a1a1a; border:1px solid #ff4444;
+                    color:#ff4444; padding:0.5rem 0.75rem;
+                    border-radius:8px; cursor:pointer; font-size:0.85rem;">
+                    🗑
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          `;
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("loadingBox").innerHTML =
+          `<p style="color:#ff4444;">Failed to load recordings. Make sure server is running.</p>`;
+      }
+    }
+
+    // ===== OPEN MODAL =====
+    function openModal(url, filename) {
+      const modal = document.getElementById("videoModal");
+      const video = document.getElementById("modalVideo");
+      const label = document.getElementById("modalFileName");
+
+      video.src = url;
+      label.innerText = filename;
+      modal.style.display = "flex";
+    }
+
+    // ===== CLOSE MODAL =====
+    function closeModal() {
+      const modal = document.getElementById("videoModal");
+      const video = document.getElementById("modalVideo");
+      video.pause();
+      video.src = "";
+      modal.style.display = "none";
+    }
+
+    // Close modal on background click
+    document.getElementById("videoModal").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("videoModal")) {
+        closeModal();
+      }
+    });
+
+    // ===== DELETE RECORDING =====
+    async function deleteRecording(filename, btn) {
+      if (!confirm(`Delete recording "${filename}"?`)) return;
+
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/recordings/delete/${filename}`,
+          { method: "DELETE" }
+        );
+        const data = await res.json();
+
+        if (data.success) {
+          // Remove card from UI
+          btn.closest("div[onclick]").remove();
+
+          // Check if grid is now empty
+          const grid = document.getElementById("recordingsGrid");
+          if (grid.children.length === 0) {
+            grid.style.display = "none";
+            document.getElementById("emptyBox").style.display = "block";
+          }
+        } else {
+          alert("Failed to delete recording.");
+        }
+      } catch (err) {
+        alert("Error deleting recording.");
+      }
+    }
+
+    // Run
+    loadRecordings();
+  </script>
+
+</body>
+</html>

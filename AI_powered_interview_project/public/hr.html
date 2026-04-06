@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="drawer_styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Face Detection Library -->
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
 
 <body>
@@ -52,6 +54,10 @@
       <a class="nav-item" onclick="window.location.href='dashboard.html?view=settings'">
         <i class="fa-solid fa-gear"></i>
         <span>Settings</span>
+      </a>
+      <a class="nav-item" onclick="window.location.href='recordings.html'">
+      <i class="fa-solid fa-video"></i>
+      <span>My Recordings</span>
       </a>
     </nav>
 
@@ -168,7 +174,27 @@
       </div>
 
     </div>
-
+<!-- WARNING BANNER -->
+<div id="proctoringWarning" style="
+  display:none;
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#ff4444;
+  color:#fff;
+  padding:0.75rem 1.5rem;
+  border-radius:10px;
+  font-weight:600;
+  font-size:0.95rem;
+  z-index:9999;
+  box-shadow:0 4px 20px rgba(255,68,68,0.4);
+  text-align:center;
+  max-width:500px;
+  width:90%;
+">
+  ⚠️ <span id="warningText">Warning message here</span>
+</div>
   </main>
 
   <script>

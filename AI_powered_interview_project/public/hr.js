@@ -9,6 +9,11 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let isCameraOn = false;
 let sessionID = null;
+let proctoringInterval = null;
+let warningTimeout = null;
+let lastPositions = null;
+let tabSwitchCount = 0;
+let isProctoring = false;
 // ================= MIC SETUP =================
 let recognition;
 
@@ -38,7 +43,7 @@ async function toggleCamera() {
     try {
       cameraStream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: false
+        audio: true
       });
 
       isCameraOn = true;
@@ -127,7 +132,176 @@ function stopCamera() {
 }
 
 // ================= START INTERVIEW =================
+// ================= PROCTORING SYSTEM =================
 
+// --- Show Warning ---
+function showWarning(message) {
+  const banner = document.getElementById("proctoringWarning");
+  const text = document.getElementById("warningText");
+
+  text.innerText = message;
+  banner.style.display = "block";
+
+  // Clear previous timeout
+  if (warningTimeout) clearTimeout(warningTimeout);
+
+  // Auto hide after 4 seconds
+  warningTimeout = setTimeout(() => {
+    banner.style.display = "none";
+  }, 2000);
+}
+
+// --- Load Face API Models ---
+async function loadFaceModels() {
+  const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
+  try {
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+    ]);
+    console.log("✅ Face models loaded");
+    return true;
+  } catch (err) {
+    console.error("❌ Face model load failed:", err);
+    return false;
+  }
+}
+
+// --- FEATURE 1: Face Detection (No face / Multiple faces / Looking away) ---
+async function checkFace() {
+  if (!isCameraOn || !cameraStream) return;
+
+  const video = document.getElementById("cameraPreview");
+  if (!video || video.readyState < 2) return;
+
+  try {
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks();
+
+    // No face detected
+    if (detections.length === 0) {
+      showWarning("⚠️ No face detected! Please ensure your face is visible.");
+      return;
+    }
+
+    // Multiple people detected
+    if (detections.length > 1) {
+      showWarning("⚠️ Multiple people detected! Only one person should be present.");
+      return;
+    }
+
+    // Looking away detection — check nose position
+    const landmarks = detections[0].landmarks;
+    const nose = landmarks.getNose()[0];
+    const jaw = landmarks.getJawOutline();
+    const faceWidth = jaw[16].x - jaw[0].x;
+    const faceCenter = jaw[0].x + faceWidth / 2;
+    const noseOffset = Math.abs(nose.x - faceCenter);
+    const lookAwayThreshold = faceWidth * 0.25;
+
+    if (noseOffset > lookAwayThreshold) {
+      showWarning("👀 Please look at the screen! Avoid looking away.");
+    }
+
+  } catch (err) {
+    console.error("Face check error:", err);
+  }
+}
+
+// --- FEATURE 2: Unusual Movement Detection ---
+async function checkMovement() {
+  if (!isCameraOn || !cameraStream) return;
+
+  const video = document.getElementById("cameraPreview");
+  if (!video || video.readyState < 2) return;
+
+  try {
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+
+    if (detections.length === 0) return;
+
+    const box = detections[0].box;
+    const currentPos = { x: box.x, y: box.y };
+
+    if (lastPositions) {
+      const deltaX = Math.abs(currentPos.x - lastPositions.x);
+      const deltaY = Math.abs(currentPos.y - lastPositions.y);
+
+      // If moved more than 60px suddenly = unusual movement
+      if (deltaX > 60 || deltaY > 60) {
+        showWarning("🚨 Unusual movement detected! Please stay still and focused.");
+      }
+    }
+
+    lastPositions = currentPos;
+
+  } catch (err) {
+    console.error("Movement check error:", err);
+  }
+}
+
+// --- FEATURE 3: Tab Switch Detection ---
+function setupTabSwitchDetection() {
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && isProctoring) {
+      tabSwitchCount++;
+      showWarning(`🚫 Tab switch detected! (${tabSwitchCount} time${tabSwitchCount > 1 ? "s" : ""}). Stay on this page.`);
+    }
+  });
+
+  window.addEventListener("blur", () => {
+    if (isProctoring) {
+      showWarning("🚫 You left the interview window! Please stay focused.");
+    }
+  });
+}
+
+// --- START PROCTORING ---
+async function startProctoring() {
+  if (!isCameraOn) return;
+
+  isProctoring = true;
+  lastPositions = null;
+  tabSwitchCount = 0;
+
+  // Load face models first
+  const modelsLoaded = await loadFaceModels();
+  if (!modelsLoaded) {
+    console.warn("Proctoring running without face detection");
+  }
+
+  // Run face + movement checks every 3 seconds
+  // Only start interval if models loaded successfully
+  if (modelsLoaded) {
+    proctoringInterval = setInterval(async () => {
+      await checkFace();
+      await checkMovement();
+    }, 3000);
+  } else {
+    console.warn("⚠️ Face detection disabled — models failed to load");
+  }
+
+  console.log("✅ Proctoring started");
+}
+
+// --- STOP PROCTORING ---
+function stopProctoring() {
+  isProctoring = false;
+  if (proctoringInterval) {
+    clearInterval(proctoringInterval);
+    proctoringInterval = null;
+  }
+  if (warningTimeout) {
+    clearTimeout(warningTimeout);
+    warningTimeout = null;
+  }
+  const banner = document.getElementById("proctoringWarning");
+  if (banner) banner.style.display = "none";
+
+  console.log("🛑 Proctoring stopped");
+}
 // ================= START INTERVIEW =================
 async function startHRInterview() {
   const role = document.getElementById("hrRole").value;
@@ -162,10 +336,15 @@ async function startHRInterview() {
     document.getElementById("hrSection").style.display = "block";
     document.getElementById("hrResult").style.display = "none";
 
-    showQuestion();
-      if (isCameraOn) {
+   showQuestion();
+
+    if (isCameraOn) {
       startRecording();
+      startProctoring(); // ✅ START PROCTORING
     }
+
+    // Setup tab switch detection always (even without camera)
+    setupTabSwitchDetection();
   } catch (err) {
     console.error(err);
     alert("Server error while generating questions");
@@ -258,7 +437,9 @@ async function showResult() {
   document.getElementById("hrResult").style.display = "block";
 
   // STOP RECORDING when interview ends
+  // STOP RECORDING + PROCTORING when interview ends
   stopCamera();
+  stopProctoring();
 
   const avg = (totalScore / questions.length).toFixed(1);
   const avgColor = avg >= 7 ? "#00FF94" : avg >= 5 ? "#FFB800" : "#ff4444";
@@ -330,6 +511,7 @@ function restartHRInterview() {
   currentIndex = 0;
   totalScore = 0;
   allFeedbacks = [];
+  stopProctoring(); // ✅ STOP PROCTORING on restart
 }
 
 // ================= MIC BUTTON =================

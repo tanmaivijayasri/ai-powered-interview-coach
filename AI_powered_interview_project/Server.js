@@ -1471,17 +1471,35 @@ app.post("/save-recording", (req, res) => {
 });
 
 // ================= LIST RECORDINGS =================
+// ================= LIST RECORDINGS =================
 app.get("/api/recordings/:email", (req, res) => {
   const recordingsPath = path.join(__dirname, "public", "recordings");
-  const email = req.params.email;
-  const sanitizedEmail = email.replace(/[@.]/g, "_");
 
   try {
     const files = fs.readdirSync(recordingsPath);
-    const userFiles = files.filter(f => f.includes(sanitizedEmail) || f.endsWith(".webm"));
-    res.json({ success: true, files: userFiles });
+    const webmFiles = files.filter(f => f.endsWith(".webm"));
+    res.json({ success: true, files: webmFiles });
   } catch (e) {
     res.json({ success: true, files: [] });
+  }
+});
+
+// ================= DELETE RECORDING =================
+app.delete("/api/recordings/delete/:filename", (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, "public", "recordings", filename);
+
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log("✅ Recording deleted:", filename);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ success: false, message: "File not found" });
+    }
+  } catch (e) {
+    console.error("❌ Delete error:", e);
+    res.status(500).json({ success: false });
   }
 });
 
