@@ -100,15 +100,37 @@
           <option value="25">25 Questions</option>
         </select>
 
-        <button class="btn-primary hr-btn" onclick="startHRInterview()" style="width:100%; margin-top:20px;">
-          Start Interview
+        <!-- CAMERA TOGGLE BUTTON -->
+        <button id="cameraBtn" class="btn-primary hr-btn" onclick="toggleCamera()"
+              style="width:100%; margin-top:15px; background:#333;">
+              📷 Enable Camera (Optional)
         </button>
+
+<button class="btn-primary hr-btn" onclick="startHRInterview()" style="width:100%; margin-top:10px;">
+  Start Interview
+</button>
       </div>
 
       <!-- QUESTION SECTION -->
       <div id="hrSection" style="display:none; margin-top:30px;">
 
-        <h3 id="hrQuestion"></h3>
+        <!-- CAMERA BUBBLE — fixed corner preview -->
+        <video id="cameraPreview" autoplay muted playsinline
+          style="
+            position:fixed;
+            bottom:20px;
+            right:20px;
+            width:160px;
+            height:120px;
+            border-radius:12px;
+            border:2px solid #D9FF00;
+            object-fit:cover;
+            z-index:999;
+            display:none;
+          ">
+        </video>
+
+<h3 id="hrQuestion"></h3>
 
         <!-- TEXTAREA -->
         <textarea id="hrAnswer" class="input-box" placeholder="Write your answer here or use the mic below..."></textarea>

@@ -17,6 +17,8 @@ try { nodemailer = require("nodemailer"); } catch (e) { console.warn("⚠️ nod
 try { rateLimit = require("express-rate-limit"); } catch (e) { console.warn("⚠️ express-rate-limit missing, rate limiting disabled."); }
 
 const crypto = require("crypto");
+let ffmpeg;
+try { ffmpeg = require("fluent-ffmpeg"); } catch (e) { console.warn("⚠️ fluent-ffmpeg missing, mp4 conversion disabled."); }
 
 // Local Modules
 const { extractResumeText } = require('./resumeParser');
@@ -57,6 +59,11 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 app.use("/uploads", express.static(uploadDir));
+// Recordings Directory
+const recordingsDir = path.join(__dirname, "public", "recordings");
+if (!fs.existsSync(recordingsDir)) {
+  fs.mkdirSync(recordingsDir, { recursive: true });
+}
 
 /* ================= DATABASE ================= */
 let User, Resume, InterviewAttempt, GeneratedQuestion;
@@ -1436,6 +1443,49 @@ app.post("/save-hr-score", (req, res) => {
 
   res.json({ success: true });
 });
+// ================= SAVE RECORDING =================
+// ================= SAVE RECORDING =================
+// ================= SAVE RECORDING =================
+app.post("/save-recording", (req, res) => {
+  if (!multer) return res.status(500).json({ success: false, message: "Multer not available" });
+
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, path.join(__dirname, "public", "recordings"));
+    },
+    filename: (req, file, cb) => {
+      cb(null, file.originalname);
+    }
+  });
+
+  const videoUpload = multer({ storage }).single("video");
+
+  videoUpload(req, res, (err) => {
+    if (err) {
+      console.error("❌ Recording save error:", err);
+      return res.status(500).json({ success: false });
+    }
+    console.log("✅ Recording saved:", req.file.filename);
+    res.json({ success: true, filename: req.file.filename });
+  });
+});
+
+// ================= LIST RECORDINGS =================
+app.get("/api/recordings/:email", (req, res) => {
+  const recordingsPath = path.join(__dirname, "public", "recordings");
+  const email = req.params.email;
+  const sanitizedEmail = email.replace(/[@.]/g, "_");
+
+  try {
+    const files = fs.readdirSync(recordingsPath);
+    const userFiles = files.filter(f => f.includes(sanitizedEmail) || f.endsWith(".webm"));
+    res.json({ success: true, files: userFiles });
+  } catch (e) {
+    res.json({ success: true, files: [] });
+  }
+});
+
+// ================= GLOBAL ERROR HANDLING =================
 // ================= GLOBAL ERROR HANDLING =================
 app.use((req, res, next) => {
   res.status(404).json({

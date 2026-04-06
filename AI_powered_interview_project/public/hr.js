@@ -4,6 +4,11 @@ let currentIndex = 0;
 let totalScore = 0;
 let questionLimit = 5;
 let allFeedbacks = []; // NEW — stores all Q&A scores silently
+let cameraStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isCameraOn = false;
+let sessionID = null;
 // ================= MIC SETUP =================
 let recognition;
 
@@ -25,6 +30,103 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     console.error("Speech error:", event.error);
   };
 }
+// ================= CAMERA TOGGLE =================
+async function toggleCamera() {
+  const btn = document.getElementById("cameraBtn");
+
+  if (!isCameraOn) {
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+
+      isCameraOn = true;
+      btn.innerText = "📷 Camera ON (click to disable)";
+      btn.style.background = "#00FF94";
+      btn.style.color = "#000";
+
+    } catch (err) {
+      alert("Camera access denied or not available.");
+      console.error(err);
+    }
+  } else {
+    stopCamera();
+    btn.innerText = "📷 Enable Camera (Optional)";
+    btn.style.background = "#333";
+    btn.style.color = "";
+  }
+}
+
+// ================= START RECORDING =================
+function startRecording() {
+  if (!cameraStream) return;
+
+  sessionID = crypto.randomUUID();
+  recordedChunks = [];
+
+  const preview = document.getElementById("cameraPreview");
+  preview.srcObject = cameraStream;
+  preview.style.display = "block";
+
+  const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+    ? "video/webm;codecs=vp9"
+    : "video/webm";
+
+  mediaRecorder = new MediaRecorder(cameraStream, { mimeType });
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) {
+      recordedChunks.push(e.data);
+    }
+  };
+
+  mediaRecorder.onstop = async () => {
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const formData = new FormData();
+    formData.append("video", blob, `${sessionID}.webm`);
+    formData.append("sessionID", sessionID);
+    formData.append("email", localStorage.getItem("userEmail"));
+
+    try {
+      await fetch("http://localhost:3000/save-recording", {
+        method: "POST",
+        body: formData
+      });
+      console.log("✅ Recording saved to server");
+    } catch (err) {
+      console.error("❌ Failed to save recording:", err);
+    }
+  };
+
+  mediaRecorder.start();
+  console.log("🎥 Recording started:", sessionID);
+}
+
+// ================= STOP RECORDING =================
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+
+  const preview = document.getElementById("cameraPreview");
+  preview.style.display = "none";
+  preview.srcObject = null;
+}
+
+// ================= STOP CAMERA =================
+function stopCamera() {
+  stopRecording();
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+
+  isCameraOn = false;
+}
+
+// ================= START INTERVIEW =================
 
 // ================= START INTERVIEW =================
 async function startHRInterview() {
@@ -61,7 +163,9 @@ async function startHRInterview() {
     document.getElementById("hrResult").style.display = "none";
 
     showQuestion();
-
+      if (isCameraOn) {
+      startRecording();
+    }
   } catch (err) {
     console.error(err);
     alert("Server error while generating questions");
@@ -153,6 +257,9 @@ async function showResult() {
   document.getElementById("hrSection").style.display = "none";
   document.getElementById("hrResult").style.display = "block";
 
+  // STOP RECORDING when interview ends
+  stopCamera();
+
   const avg = (totalScore / questions.length).toFixed(1);
   const avgColor = avg >= 7 ? "#00FF94" : avg >= 5 ? "#FFB800" : "#ff4444";
 
@@ -204,6 +311,20 @@ function restartHRInterview() {
   document.getElementById("startSection").style.display = "block";
   document.getElementById("hrSection").style.display = "none";
   document.getElementById("hrResult").style.display = "none";
+
+  // RESET camera button UI (keep camera ON if user had it on)
+  const btn = document.getElementById("cameraBtn");
+  if (btn) {
+    if (isCameraOn) {
+      btn.innerText = "📷 Camera ON (click to disable)";
+      btn.style.background = "#00FF94";
+      btn.style.color = "#000";
+    } else {
+      btn.innerText = "📷 Enable Camera (Optional)";
+      btn.style.background = "#333";
+      btn.style.color = "";
+    }
+  }
 
   questions = [];
   currentIndex = 0;
